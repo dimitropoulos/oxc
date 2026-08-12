@@ -1,0 +1,24 @@
+[package]
+name = "oxc_openapi_order"
+version = "0.63.0"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+include = ["/src"]
+keywords.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+rust-version.workspace = true
+description.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+doctest = false
+
+# Intentionally dependency-free: this crate is pure ordering policy, shared by
+# every formatter backend. No AST, no allocator, no serde.
+[dependencies]
