@@ -369,7 +369,7 @@ fn may_reorder<'a>(
     // the last item: a block mapping has no closing token, and `flush_container_end_comments` claims
     // deeper-indented comments that follow it. The one comment that can be pending from before the
     // span is a held-back suppression marker, which this catches too, since it starts earlier still.
-    let scope_end = trivia_scope_end(&source, mapping.span.end);
+    let scope_end = comment_scope_end(mapping, f);
     if f.context().comments().peek().is_some_and(|comment| comment.span.start < scope_end) {
         return false;
     }
@@ -440,6 +440,16 @@ fn may_reorder<'a>(
     }
 
     true
+}
+
+/// The end of the region whose comments `mapping`'s printing can claim.
+///
+/// The bound refusal (1) in [`may_reorder`] tests, exposed so the permuted separator can assert the
+/// same thing rather than a weaker approximation of it. `mapping.span.end` is not that bound: it
+/// stops at the last item, and a trailing comment on that item's line starts after it yet is still
+/// claimable by `write_trailing_same_line_comment`.
+pub fn comment_scope_end<'a>(mapping: &Mapping<'a>, f: &YamlFormatter<'_, 'a>) -> u32 {
+    trivia_scope_end(&f.context().source_text(), mapping.span.end)
 }
 
 /// The first offset at or after `from` that is neither whitespace nor part of a comment line.
