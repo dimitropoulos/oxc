@@ -2179,6 +2179,7 @@ dependencies = [
  "oxc_diagnostics",
  "oxc_formatter_core",
  "oxc_formatter_tests",
+ "oxc_openapi_order",
  "oxc_span",
  "oxc_tasks_common",
  "pico-args",

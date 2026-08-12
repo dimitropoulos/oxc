@@ -38,6 +38,13 @@ pub fn apply_yaml_options(options: &mut YamlFormatOptions, json: &OptionSet) {
                         if s == "none" { TrailingCommas::Never } else { TrailingCommas::Always };
                 }
             }
+            // Oxfmt's own extension, enabled by default; a fixture opts out to pin that the option
+            // is what does the reordering rather than something else.
+            "sortOpenapi" => {
+                if let Some(b) = value.as_bool() {
+                    options.sort_openapi = b.into();
+                }
+            }
             _ => {}
         }
     }

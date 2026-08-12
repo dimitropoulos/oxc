@@ -23,6 +23,8 @@ pub struct YamlFormatOptions {
     pub bracket_spacing: BracketSpacing,
     /// Trailing comma in broken flow collections. Mirrors Prettier's `trailingComma`
     pub trailing_commas: TrailingCommas,
+    /// OpenAPI-aware key ordering. Oxfmt's own extension, not a Prettier option.
+    pub sort_openapi: SortOpenapi,
 }
 
 /// How multi-line flow scalars and folded block scalars are re-flowed.
@@ -72,6 +74,32 @@ impl Default for BracketSpacing {
 }
 
 impl From<bool> for BracketSpacing {
+    fn from(value: bool) -> Self {
+        Self(value)
+    }
+}
+
+/// Whether block mapping entries are reordered per the OpenAPI key-ordering policy
+/// (`oxc_openapi_order`).
+///
+/// Enabled by default, and content-gated: nothing is reordered unless the document's root mapping
+/// has an `openapi` key. A document without one is byte-identical with this on.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct SortOpenapi(bool);
+
+impl SortOpenapi {
+    pub fn value(self) -> bool {
+        self.0
+    }
+}
+
+impl Default for SortOpenapi {
+    fn default() -> Self {
+        Self(true)
+    }
+}
+
+impl From<bool> for SortOpenapi {
     fn from(value: bool) -> Self {
         Self(value)
     }

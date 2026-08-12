@@ -46,7 +46,7 @@ pub use oxc_formatter_core::spec::{Gap, classify_gap};
 
 /// `true` when the source between `from` and `to` holds nothing but whitespace and comments
 /// (every line blank or `#`-only after indentation).
-fn gap_is_trivia_only(source: &str, from: u32, to: u32) -> bool {
+pub fn gap_is_trivia_only(source: &str, from: u32, to: u32) -> bool {
     source[from as usize..to as usize].lines().all(|line| {
         let trimmed = line.trim_start();
         trimmed.is_empty() || trimmed.starts_with('#')
