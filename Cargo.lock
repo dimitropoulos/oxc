@@ -1862,6 +1862,7 @@ dependencies = [
  "oxc_linter",
  "oxc_mangler",
  "oxc_minifier",
+ "oxc_openapi_order",
  "oxc_parser",
  "oxc_react_compiler",
  "oxc_semantic",

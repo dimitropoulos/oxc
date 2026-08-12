@@ -10,7 +10,7 @@
 //   node crates/oxc_openapi_order/tests/differential/validate_reference.mjs \
 //     /tmp/openapi-order-corpus
 //
-// Requires openapi-format v1.33.6 resolvable from the current working directory. The corpus files
+// Requires openapi-format v1.33.6, resolved from OPENAPI_FORMAT_ROOT or the cwd. The corpus files
 // each hold {"input": <document>, "expected": <what reference.rs produced>}; this script runs the
 // real `openapiSort` over `input` and compares the full key-order trace. Any mismatch means the
 // transcription has drifted and the differential test is measuring against the wrong oracle.
@@ -26,8 +26,30 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 
-const require = createRequire(join(process.cwd(), "package.json"));
-const { openapiSort } = require("openapi-format");
+// Resolved EXPLICITLY, from an env var first and only then the cwd.
+//
+// The cwd-only version of this failed for a maintainer: `require` resolves from the path given to
+// `createRequire`, so it only worked when run from inside a directory that already had
+// openapi-format installed, which nothing in the repo does. `just validate-openapi-reference` sets
+// the variable; running it by hand from the install directory still works.
+function loadOpenapiFormat() {
+  const roots = [process.env.OPENAPI_FORMAT_ROOT, process.cwd()].filter(Boolean);
+  for (const root of roots) {
+    try {
+      return createRequire(join(root, "package.json"))("openapi-format");
+    } catch {
+      /* try the next root */
+    }
+  }
+  console.error(
+    `cannot resolve 'openapi-format' from any of: ${roots.join(", ")}\n` +
+      "Run `just validate-openapi-reference`, which installs it and sets OPENAPI_FORMAT_ROOT, or set\n" +
+      "that variable to a directory containing node_modules/openapi-format@1.33.6.",
+  );
+  process.exit(2);
+}
+
+const { openapiSort } = loadOpenapiFormat();
 
 const dir = process.argv[2];
 if (!dir) {
