@@ -2,7 +2,7 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# The gate is per DOCUMENT, not per stream. The first document is OpenAPI and is ordered; the
+# The gate is per document, not per stream. The first document is OpenAPI and is ordered; the
 # second is not and is byte-identical; the third is OpenAPI again, proving the gate is re-read
 # rather than latched.
 ---
@@ -33,7 +33,7 @@ paths:
 ------------------
 { printWidth: 80 }
 ------------------
-# The gate is per DOCUMENT, not per stream. The first document is OpenAPI and is ordered; the
+# The gate is per document, not per stream. The first document is OpenAPI and is ordered; the
 # second is not and is byte-identical; the third is OpenAPI again, proving the gate is re-read
 # rather than latched.
 ---
@@ -63,7 +63,7 @@ paths:
 -------------------
 { printWidth: 100 }
 -------------------
-# The gate is per DOCUMENT, not per stream. The first document is OpenAPI and is ordered; the
+# The gate is per document, not per stream. The first document is OpenAPI and is ordered; the
 # second is not and is byte-identical; the third is OpenAPI again, proving the gate is re-read
 # rather than latched.
 ---

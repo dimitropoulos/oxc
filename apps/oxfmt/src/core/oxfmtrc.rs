@@ -243,7 +243,7 @@ pub struct FormatConfig {
     ///
     /// Content-gated: only documents whose root is a mapping with an `openapi` key are touched, so
     /// any other YAML or JSON file formats identically whether this is on or off.
-    /// `swagger: "2.0"` does not match — the key order is OpenAPI 3.x shaped.
+    /// `swagger: "2.0"` does not match, because the key order is OpenAPI 3.x shaped.
     ///
     /// Pass `false` to disable, or an object to configure the sub-options below.
     ///
@@ -755,7 +755,7 @@ pub struct SortOpenapiConfig {
     /// `query`, `post`, `put`, `delete`, `patch`, `options`, `head`, and a path item with no tagged
     /// method sorts first.
     ///
-    /// Unlike the field order, these compare case-SENSITIVELY.
+    /// Unlike the field order, these compare case-sensitively.
     ///
     /// - Default: `"original"`
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -780,7 +780,7 @@ pub struct SortOpenapiConfig {
     /// Override the field order for individual parent keys, as a map from a key to the order its
     /// mapping's fields should take.
     ///
-    /// Merged OVER the built-in orders, so naming one key leaves every other one intact. An empty
+    /// Merged over the built-in orders, so naming one key leaves every other one intact. An empty
     /// array means "order this mapping alphabetically", which is not the same as omitting the key
     /// (which keeps the built-in order). Fields not listed follow the listed ones, compared
     /// case-insensitively.

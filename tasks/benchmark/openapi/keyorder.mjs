@@ -1,4 +1,4 @@
-// Compares the KEY ORDER of two YAML/JSON documents, ignoring everything else.
+// Compares the key order of two YAML/JSON documents, ignoring everything else.
 //
 //   node keyorder.mjs a.yaml b.yaml     # exit 0 when every mapping's key sequence matches
 //
@@ -6,7 +6,7 @@
 //
 // The obvious test is a fixed point -- format both openapi-format's output and the original with
 // oxfmt, and expect identical bytes, so that emitter style cancels out. That reasoning assumes the
-// formatter NORMALISES style. oxfmt does not: it deliberately preserves the scalar style it is given,
+// formatter normalises style. oxfmt does not: it deliberately preserves the scalar style it is given,
 // so openapi-format's re-emission (a folded `description: >-` becoming a different style, for
 // instance) survives oxfmt and shows up as a byte difference that has nothing to do with ordering.
 // Measured on the stripe corpus: the byte diff fails, while key order agrees at all 44,350 mappings.
@@ -14,7 +14,7 @@
 // So the comparison has to be made on the thing actually being claimed. This walks both documents and
 // compares the key sequence at every mapping, which isolates ordering from style exactly.
 //
-// ONE ordered parser reads both inputs, because YAML is a superset of JSON. `JSON.parse` would be
+// One ordered parser reads both inputs, because YAML is a superset of JSON. `JSON.parse` would be
 // wrong: JavaScript enumerates integer-like keys in ascending numeric order, silently reordering
 // every `responses` block before the comparison could see it.
 
@@ -24,8 +24,8 @@ import { join } from "node:path";
 
 // `yaml` is not a dependency of this repository; it comes from the throwaway install `run.sh` makes.
 //
-// Resolved EXPLICITLY rather than with a bare `import`, because ESM resolves bare specifiers from the
-// importing FILE's directory upward and this file lives in the repo, not next to the install. A `cd`
+// Resolved explicitly rather than with a bare `import`, because ESM resolves bare specifiers from the
+// importing file's directory upward, and this file lives in the repo, not next to the install. A `cd`
 // into the install directory does not help -- that is exactly how the sibling validate_reference.mjs
 // came to fail for a maintainer running it by hand.
 function requireFrom(dir, name) {
@@ -51,7 +51,7 @@ if (!YAML) {
   process.exit(2);
 }
 
-// Keyed by PATH, not by position in a flat list. A list would turn one reordered mapping into a
+// Keyed by path, not by position in a flat list. A list would turn one reordered mapping into a
 // divergence at every later line, purely from index shifting: on the github corpus that inflated a
 // single real difference into 1256 reported ones.
 function trace(node, path = "$", out = new Map()) {
@@ -111,10 +111,10 @@ for (const [path, ours] of a) {
     continue;
   }
 
-  // Different key SETS are never a mere ordering difference.
+  // Different key sets are never a mere ordering difference.
   if ([...ours].sort().join(",") !== [...theirs].sort().join(",")) {
     if (unexplained < 5) {
-      console.error(`KEY SET differs at ${path}\n  ours:   ${ours}\n  theirs: ${theirs}`);
+      console.error(`key set differs at ${path}\n  ours:   ${ours}\n  theirs: ${theirs}`);
     }
     unexplained++;
     continue;
@@ -122,13 +122,13 @@ for (const [path, ours] of a) {
 
   // The only divergence this oracle is allowed to tolerate is the one its representation forces.
   //
-  // What is NOT tolerated, and is checked here: the relative order of the STRING keys must match,
+  // What is not tolerated, and is checked here: the relative order of the string keys must match,
   // and their side must actually be in JavaScript property order. Both tools rank string keys by the
   // same table and comparator, so a real ordering bug shows up in that subsequence.
   //
-  // What CANNOT be checked here: the relative order of the integer-like keys. openapi-format read the
+  // What cannot be checked here: the relative order of the integer-like keys. openapi-format read the
   // document into a plain object, which enumerates them numerically, so its output carries no record
-  // of what the source said. This is counted as UNVERIFIABLE rather than explained -- it is not
+  // of what the source said. This is counted as unverifiable rather than explained: it is not
   // evidence of agreement, and calling it "explained" would have made the corruption of 873 mappings'
   // integer-key order pass silently, which is exactly what it did before this was split out.
   //
@@ -142,7 +142,7 @@ for (const [path, ours] of a) {
   } else {
     if (unexplained < 5) {
       const why = sameStringOrder ? "their side is not in JS property order" : "string-key order differs";
-      console.error(`UNEXPLAINED divergence at ${path} (${why})\n  ours:   ${ours}\n  theirs: ${theirs}`);
+      console.error(`unexplained divergence at ${path} (${why})\n  ours:   ${ours}\n  theirs: ${theirs}`);
     }
     unexplained++;
   }

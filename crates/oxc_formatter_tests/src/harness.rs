@@ -87,7 +87,7 @@ pub fn apply_core_options<O: FormatOptions>(options: &mut O, json: &OptionSet) {
 /// Parses a fixture's `sortOpenapi` value: `false`, `true`, or the object form.
 ///
 /// Shared by the YAML and JSON harnesses so a fixture's `options.json` cannot mean two different
-/// things depending on which backend reads it — the option's whole point is that both agree.
+/// things depending on which backend reads it, since the option's whole point is that both agree.
 ///
 /// Lenient like the rest of fixture parsing: an unknown sub-option or a wrongly typed value is
 /// ignored rather than failing, so a typo shows up as an unchanged snapshot instead of a panic.

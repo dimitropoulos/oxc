@@ -2,9 +2,9 @@
 source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-// `responses`, `schemas` and `properties` order their CHILDREN, never their own entries.
+// `responses`, `schemas` and `properties` order their children, never their own entries.
 //
-// The status codes keep source order. Each child is ordered by the RESPONSE table, and the keys are
+// The status codes keep source order. Each child is ordered by the response table, and the keys are
 // chosen so the two candidate tables disagree:
 //   responses table [description, headers, content, links] -> content, links, type
 //   properties table [description, type, items, ...]       -> type, content, links
@@ -26,9 +26,9 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ------------------
 { printWidth: 80 }
 ------------------
-// `responses`, `schemas` and `properties` order their CHILDREN, never their own entries.
+// `responses`, `schemas` and `properties` order their children, never their own entries.
 //
-// The status codes keep source order. Each child is ordered by the RESPONSE table, and the keys are
+// The status codes keep source order. Each child is ordered by the response table, and the keys are
 // chosen so the two candidate tables disagree:
 //   responses table [description, headers, content, links] -> content, links, type
 //   properties table [description, type, items, ...]       -> type, content, links
@@ -53,9 +53,9 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 -------------------
 { printWidth: 100 }
 -------------------
-// `responses`, `schemas` and `properties` order their CHILDREN, never their own entries.
+// `responses`, `schemas` and `properties` order their children, never their own entries.
 //
-// The status codes keep source order. Each child is ordered by the RESPONSE table, and the keys are
+// The status codes keep source order. Each child is ordered by the response table, and the keys are
 // chosen so the two candidate tables disagree:
 //   responses table [description, headers, content, links] -> content, links, type
 //   properties table [description, type, items, ...]       -> type, content, links

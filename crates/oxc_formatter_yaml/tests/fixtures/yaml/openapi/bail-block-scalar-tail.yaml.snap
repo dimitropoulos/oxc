@@ -2,15 +2,15 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# BAIL-OUT 5 of 5: a block scalar whose OUTPUT depends on its position.
+# Bail-out 5 of 5: a block scalar whose output depends on its position.
 #
 # `write_block_scalar` decides whether it owns its trailing newlines by comparing its span end
 # against the stream's last descendant, and the final newline of the file is decided from
-# whether the stream's last descendant is keep-chomped. Both read SOURCE order, so neither
+# whether the stream's last descendant is keep-chomped. Both read source order, so neither
 # follows an entry to a new position: moving one emits a trailing blank line at EOF or loses
 # the file's final newline, and re-formatting that output would change it again.
 #
-# `/safe` is the case that must NOT be refused: a folded scalar with a single trailing newline
+# `/safe` is the case that must not be refused: a folded scalar with a single trailing newline
 # is position-independent, and this shape is pervasive in real specs (`description: >-`).
 openapi: 3.0.0
 paths:
@@ -38,15 +38,15 @@ paths:
 ------------------
 { printWidth: 80 }
 ------------------
-# BAIL-OUT 5 of 5: a block scalar whose OUTPUT depends on its position.
+# Bail-out 5 of 5: a block scalar whose output depends on its position.
 #
 # `write_block_scalar` decides whether it owns its trailing newlines by comparing its span end
 # against the stream's last descendant, and the final newline of the file is decided from
-# whether the stream's last descendant is keep-chomped. Both read SOURCE order, so neither
+# whether the stream's last descendant is keep-chomped. Both read source order, so neither
 # follows an entry to a new position: moving one emits a trailing blank line at EOF or loses
 # the file's final newline, and re-formatting that output would change it again.
 #
-# `/safe` is the case that must NOT be refused: a folded scalar with a single trailing newline
+# `/safe` is the case that must not be refused: a folded scalar with a single trailing newline
 # is position-independent, and this shape is pervasive in real specs (`description: >-`).
 openapi: 3.0.0
 paths:
@@ -73,15 +73,15 @@ paths:
 -------------------
 { printWidth: 100 }
 -------------------
-# BAIL-OUT 5 of 5: a block scalar whose OUTPUT depends on its position.
+# Bail-out 5 of 5: a block scalar whose output depends on its position.
 #
 # `write_block_scalar` decides whether it owns its trailing newlines by comparing its span end
 # against the stream's last descendant, and the final newline of the file is decided from
-# whether the stream's last descendant is keep-chomped. Both read SOURCE order, so neither
+# whether the stream's last descendant is keep-chomped. Both read source order, so neither
 # follows an entry to a new position: moving one emits a trailing blank line at EOF or loses
 # the file's final newline, and re-formatting that output would change it again.
 #
-# `/safe` is the case that must NOT be refused: a folded scalar with a single trailing newline
+# `/safe` is the case that must not be refused: a folded scalar with a single trailing newline
 # is position-independent, and this shape is pervasive in real specs (`description: >-`).
 openapi: 3.0.0
 paths:

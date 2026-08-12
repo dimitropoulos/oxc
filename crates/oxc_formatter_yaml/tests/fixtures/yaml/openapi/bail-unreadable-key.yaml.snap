@@ -2,14 +2,14 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# BAIL-OUT 4 of 5: a key that is not readable as scalar text.
+# Bail-out 4 of 5: a key that is not readable as scalar text.
 #
 # "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
 # allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
 # both refused.
 #
-# `/explicit-key` and `/quoted` are the readable cases, and ARE ordered. An explicit `? key`
-# resolves to its content, so it ranks like the implicit spelling -- and it MUST be allowed: the
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
 # printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
 # second, and formatting would not be idempotent.
 openapi: 3.0.0
@@ -40,14 +40,14 @@ paths:
 ------------------
 { printWidth: 80 }
 ------------------
-# BAIL-OUT 4 of 5: a key that is not readable as scalar text.
+# Bail-out 4 of 5: a key that is not readable as scalar text.
 #
 # "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
 # allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
 # both refused.
 #
-# `/explicit-key` and `/quoted` are the readable cases, and ARE ordered. An explicit `? key`
-# resolves to its content, so it ranks like the implicit spelling -- and it MUST be allowed: the
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
 # printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
 # second, and formatting would not be idempotent.
 openapi: 3.0.0
@@ -76,14 +76,14 @@ paths:
 -------------------
 { printWidth: 100 }
 -------------------
-# BAIL-OUT 4 of 5: a key that is not readable as scalar text.
+# Bail-out 4 of 5: a key that is not readable as scalar text.
 #
 # "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
 # allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
 # both refused.
 #
-# `/explicit-key` and `/quoted` are the readable cases, and ARE ordered. An explicit `? key`
-# resolves to its content, so it ranks like the implicit spelling -- and it MUST be allowed: the
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
 # printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
 # second, and formatting would not be idempotent.
 openapi: 3.0.0

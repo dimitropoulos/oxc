@@ -27,7 +27,7 @@ pub struct YamlFormatContext<'a> {
     /// held across a nested write, which is what keeps the shared buffer re-entrant.
     openapi: RefCell<OpenapiState<'a>>,
     /// Whether the document currently being printed is an OpenAPI document.
-    /// Per DOCUMENT, not per stream: a stream may mix OpenAPI and non-OpenAPI documents.
+    /// Per document, not per stream: a stream may mix OpenAPI and non-OpenAPI documents.
     /// Maintained by `write_document`.
     openapi_document: Cell<bool>,
 }

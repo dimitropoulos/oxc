@@ -209,7 +209,7 @@ fn probe() -> Value {
 /// A probe for tie order and for context-sensitive lowercasing.
 ///
 /// `ΑΣ` and `Ασ` lowercase to `ας` and `ασ`, which differ only if `Final_Sigma` is applied; without
-/// it they tie and keep source order. `TYPE`/`type` tie under any correct comparator, so their order
+/// it they tie and keep source order. `TYPE` and `type` tie under any correct comparator, so their order
 /// pins the tiebreak.
 fn tie_probe() -> Value {
     Value::Map(
@@ -229,14 +229,14 @@ fn chain(path: &[&str], leaf: Value) -> (String, Value) {
 
 /// Exact chains that random generation cannot reach.
 ///
-/// Every guard in the rule keys on an ABSOLUTE ancestry index, so reaching one means hitting a
-/// specific 4-or-5 step chain — around one in fifty thousand per position triple with this
+/// Every guard in the rule keys on an absolute ancestry index, so reaching one means hitting a
+/// specific 4-or-5 step chain, around one in fifty thousand per position triple with this
 /// vocabulary. Planting them is the difference between a corpus that exercises the guards and one
 /// that merely contains their names.
 fn planted(index: usize) -> (String, Value) {
     let seq = |leaf: Value| Value::Seq(vec![leaf]);
     match index % 16 {
-        // The `components.examples.*.value` exclusion, and two shapes where it must NOT fire.
+        // The `components.examples.*.value` exclusion, and two shapes where it must not fire.
         0 => chain(&["components", "examples", "E", "value", "schema"], probe()),
         1 => chain(&["components", "examples", "E", "value", "a", "b", "schema"], probe()),
         2 => chain(&["components", "examples", "E", "notvalue", "schema"], probe()),
@@ -249,7 +249,7 @@ fn planted(index: usize) -> (String, Value) {
             &["paths", "/p", "post", "requestBody", "content", "app", "example", "parameters"],
             seq(probe()),
         ),
-        // ... and the same shape under a response, where it must NOT be skipped.
+        // ... and the same shape under a response, where it must not be skipped.
         5 => chain(
             &["paths", "/p", "post", "responses", "200", "content", "app", "example", "parameters"],
             seq(probe()),

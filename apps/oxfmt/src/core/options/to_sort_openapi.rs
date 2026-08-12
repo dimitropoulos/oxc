@@ -11,11 +11,11 @@ use super::super::oxfmtrc::{
 
 /// Convert `sortOpenapi` into the option type both formatter backends consume.
 ///
-/// Opt-OUT, like `sortPackageJson`: unset means enabled with defaults, and only an explicit
+/// Opt-out, like `sortPackageJson`: unset means enabled with defaults, and only an explicit
 /// `sortOpenapi: false` disables it. Every sub-option is independently optional, so
 /// `{ "components": true }` leaves the other three at their defaults.
 ///
-/// NOTE: Pure field translation, and infallible — an unparsable value is a config-resolution error
+/// NOTE: Pure field translation, and infallible: an unparsable value is a config-resolution error
 /// long before this runs.
 pub fn to_sort_openapi(config: &FormatConfig) -> SortOpenapi {
     let sort = config
@@ -34,7 +34,7 @@ pub fn to_sort_openapi(config: &FormatConfig) -> SortOpenapi {
         components: sort.components.unwrap_or(false),
         properties: sort.properties.unwrap_or(false),
         // A `BTreeMap` in the config, so the entries arrive in a deterministic order. The policy only
-        // ever looks a name up, so the order does not affect output — it keeps the translation
+        // ever looks a name up, so the order does not affect output. It keeps the translation
         // reproducible, which a hash map's iteration would not.
         key_order: sort
             .key_order

@@ -1,7 +1,7 @@
 // Array steps are part of the ancestry.
 //
-// The policy indexes the ancestry ABSOLUTELY and treats the containing object as absent across an
-// array boundary. `Foo` holds an ARRAY, so its element's containing object is the array, not
+// The policy indexes the ancestry absolutely and treats the containing object as absent across an
+// array boundary. `Foo` holds an array, so its element's containing object is the array, not
 // `schemas`: the element keeps source order. `parameters` is the shape where both readings agree.
 {
   "openapi": "3.0.0",

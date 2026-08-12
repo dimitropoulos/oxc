@@ -1,4 +1,4 @@
-# BAIL-OUT 1, at the two edges a block mapping's span does NOT cover.
+# Bail-out 1, at the two edges a block mapping's span does not cover.
 #
 # A block mapping has no closing token, so `mapping.span` stops at its last entry. Both a
 # same-line trailing comment and a deeper-indented end-comment run sit past that point and

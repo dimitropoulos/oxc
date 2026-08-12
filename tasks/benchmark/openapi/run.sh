@@ -4,21 +4,21 @@
 #
 #   tasks/benchmark/openapi/run.sh              # verify + benchmark every corpus
 #   tasks/benchmark/openapi/run.sh --verify      # verification only, no timings (fast)
-#   tasks/benchmark/openapi/run.sh --self-test   # prove each assertion can FAIL
+#   tasks/benchmark/openapi/run.sh --self-test   # prove each assertion can fail
 #   ONLY=petstore,stripe tasks/benchmark/openapi/run.sh
 #
-# WHAT IS ASSERTED, and why it is key ORDER rather than bytes:
+# What is asserted, and why it is key order rather than bytes:
 #
 # On defaults openapi-format deletes every comment and bundles `$ref`s, so its output can never be
 # byte-identical to a formatter's; `--no-bundle --keepComments` keeps the two inputs comparable in
-# content. The tempting next step is a FIXED POINT -- format both its output and the original with
+# content. The tempting next step is a fixed point: format both its output and the original with
 # oxfmt and expect identical bytes, on the reasoning that emitter style cancels out because oxfmt emits
-# both sides. That assumes the formatter NORMALISES style, and oxfmt deliberately preserves it, so
+# both sides. That assumes the formatter normalises style, and oxfmt deliberately preserves it, so
 # openapi-format's re-emission survives and the diff reports style rather than order.
 #
 # The assertion is therefore made on the key-order trace (`keyorder.mjs`), which isolates ordering
 # exactly, and the byte fixed point is reported beside it as a diagnostic. One thing that comparison
-# CANNOT establish is the relative order of integer-like keys, because openapi-format read the document
+# cannot establish is the relative order of integer-like keys, because openapi-format read the document
 # through a JavaScript object and lost it; those mappings are counted as unverifiable rather than as
 # agreement, and our own handling of them is verified by the differential test in
 # `crates/oxc_openapi_order/`, whose oracle can answer it.
@@ -29,7 +29,7 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# An ABSOLUTE path to this script, for the self-test's re-invocations.
+# An absolute path to this script, for the self-test's re-invocations.
 #
 # `${BASH_SOURCE[0]}` alone is not usable as a command: invoked as `bash run.sh` it is the bare name
 # `run.sh`, which bash resolves through PATH, so the re-invocation died with "command not found" and
@@ -37,7 +37,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # rather than executed, so it does not depend on the exec bit surviving a checkout.
 readonly SELF="${SCRIPT_DIR}/$(basename "${BASH_SOURCE[0]}")"
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-# OUTSIDE the repository, and that is forced rather than chosen.
+# outside the repository, and that is forced rather than chosen.
 #
 # The specs total ~40 MB, so they must not be committed -- `tasks/common/src/test_file.rs` sets the
 # precedent of downloading benchmark inputs on demand into `target/`. But oxfmt honours ignore rules,
@@ -94,7 +94,7 @@ case "${1:-}" in
 esac
 
 # Fault injection, used only by `--self-test`, which re-invokes this script with SELF_TEST_FAULT set
-# and requires the run to FAIL. It lives on the real code path on purpose: a self-test that pokes at
+# and requires the run to fail. It lives on the real code path on purpose: a self-test that pokes at
 # helper functions in isolation proves nothing about whether an assertion can fire.
 inject_fault() {
   local stage="$1" target="$2" source="${3:-}"
@@ -103,7 +103,7 @@ inject_fault() {
     unsorted)
       # Pretend oxfmt did no ordering at all, which is the failure the whole harness exists to catch.
       #
-      # Formatted from the SOURCE, not from `target`: `target` is already sorted, and re-formatting it
+      # Formatted from the source, not from `target`: `target` is already sorted, and re-formatting it
       # with the option off would leave it sorted and inject nothing. That mistake made this very case
       # report "not caught" until the injected file was inspected.
       local dir
@@ -151,7 +151,7 @@ setup() {
   mkdir -p "${CORPUS_DIR}" "${NODE_DIR}" "${OUT_DIR}"
 
   if [[ ! -x ${OXFMT} ]]; then
-    # `--no-default-features` is not optional. `napi` is a DEFAULT feature, and a binary built with
+    # `--no-default-features` is not optional. `napi` is a default feature, and a binary built with
     # it aborts on any real invocation ("External services must be set when `napi` feature is
     # enabled", walk_runner.rs) because the Node side is not there to install them.
     section "Building oxfmt (release, --no-default-features)"
@@ -170,7 +170,7 @@ setup() {
     OPENAPI_FORMAT="${NODE_DIR}/node_modules/.bin/openapi-format"
   fi
 
-  # PINNED to 1.33.6: the ordering this feature reproduces is that version's. A later release could
+  # Pinned to 1.33.6: the ordering this feature reproduces is that version's. A later release could
   # change it, and the mismatch would look like our bug rather than a version skew, so refuse rather
   # than silently measure against the wrong reference.
   local version
@@ -193,7 +193,7 @@ setup() {
   fi
   info "yaml package from ${NODE_DIR}"
 
-  # Only the SELECTED corpora, so `ONLY=petstore` does not pull 40 MB to format 2.7 kB.
+  # Only the selected corpora, so `ONLY=petstore` does not pull 40 MB to format 2.7 kB.
   for entry in "${CORPORA[@]}"; do
     IFS='|' read -r name url expected <<<"${entry}"
     selected "${name}" || continue
@@ -212,7 +212,7 @@ setup() {
   done
 }
 
-# Whether `name` is in the ONLY filter (all corpora when unset).
+# Whether `name` is in the `ONLY` filter (all corpora when unset).
 selected() {
   [[ -z ${ONLY:-} || ",${ONLY}," == *",$1,"* ]]
 }
@@ -221,14 +221,14 @@ selected() {
 
 # Lines whose first non-space character is `#`.
 #
-# Deliberately lexical, and it OVER-counts: a `#` line inside a block scalar (`description: |`) is
+# Deliberately lexical, and it over-counts: a `#` line inside a block scalar (`description: |`) is
 # content, not a comment, and these specs are full of Markdown that starts with `#`. It is still the
-# right measure for a PRESERVATION check, because both sides are measured the same way and the number
+# right measure for a preservation check, because both sides are measured the same way and the number
 # only has to be stable, not semantically exact. The synthetic probe below is what actually tests
 # comment handling.
 count_hash_lines() {
   # `grep -c` exits 1 when it matches nothing, which is not an error here. A missing file IS, though,
-  # so it reports MISSING rather than becoming an empty string that compares equal to another one.
+  # so it reports `MISSING` rather than becoming an empty string that compares equal to another one.
   [[ -r "$1" ]] || {
     printf 'MISSING'
     return
@@ -239,7 +239,7 @@ count_hash_lines() {
 # `$ref` values that leave the document: anything whose target does not start with `#`.
 #
 # Written out rather than as one regex because the obvious regex is wrong: with `[[:space:]]*` before
-# an optional quote, the "not a #" class happily matches the SPACE after the colon, so every internal
+# an optional quote, the "not a #" class happily matches the space after the colon, so every internal
 # `$ref: "#/components/..."` counts as external. The self-test caught exactly that.
 count_external_refs() {
   awk '
@@ -262,8 +262,8 @@ count_external_refs() {
 # this build (it routes to WalkRunner, which only accepts Mode::Cli), so writing a temp copy is the
 # only way to capture output.
 #
-# Returns oxfmt's status so the caller can REPORT a failure rather than have `set -e` kill the run
-# mid-corpus with no summary — which is what happened on a document oxfmt could not parse.
+# Returns oxfmt's status so the caller can report a failure rather than have `set -e` kill the run
+# mid-corpus with no summary, which is what happened on a document oxfmt could not parse.
 oxfmt_to() {
   local src="$1" dest="$2"
   cp "${src}" "${dest}"
@@ -274,7 +274,7 @@ peak_rss_kb() {
   # `/usr/bin/time -v` reports "Maximum resident set size (kbytes)". Bash's builtin `time` cannot, and
   # `/usr/bin/time` is a separate package on most distributions.
   #
-  # Checked rather than assumed: without it the pipeline yields an EMPTY string and the caller happily
+  # Checked rather than assumed: without it the pipeline yields an empty string and the caller happily
   # reports `peak RSS: kB`, which looks like a measurement and is not one.
   [[ -x /usr/bin/time ]] || {
     echo "MISSING(/usr/bin/time)"
@@ -332,10 +332,10 @@ verify_corpus() {
   inject_fault unsorted "${ours}" "${file}"
   inject_fault keyset "${ours}"
 
-  # (1) THE assertion: the two tools must agree on key ORDER at every mapping.
+  # (1) The assertion: the two tools must agree on key order at every mapping.
   #
   # Measured on the key-order trace rather than on bytes. A byte-level fixed point --
-  # oxfmt(openapi-format(x)) == oxfmt(x) -- is the tempting spelling, and it is WRONG here: it assumes
+  # oxfmt(openapi-format(x)) == oxfmt(x) is the tempting spelling, and it is wrong here: it assumes
   # oxfmt normalises scalar style, whereas oxfmt deliberately preserves the style it is given. So
   # openapi-format's re-emission survives oxfmt and the diff reports style, not order. Measured: that
   # byte diff fails on stripe while key order agrees at all 44,350 mappings. See keyorder.mjs.
@@ -346,22 +346,22 @@ verify_corpus() {
     info "$(tail -1 "${OUT_DIR}/${name}.keyorder.log")"
     order_verdict="emitter style; key order asserted equal above"
   else
-    fail "KEY ORDER DIFFERS from openapi-format for ${name}"
+    fail "key order differs from openapi-format for ${name}"
     cat "${OUT_DIR}/${name}.keyorder.log" >&2
     # Must not claim agreement in the diagnostic below when the assertion above just failed.
-    order_verdict="key order ALSO differs -- see the failure above"
+    order_verdict="key order also differs; see the failure above"
   fi
 
   # (1b) And the byte-level fixed point, reported rather than asserted, for the reason above. When it
-  # DOES hold there is nothing left to explain; when it does not, (1) is what says the difference is
+  # does hold there is nothing left to explain; when it does not, (1) is what says the difference is
   # confined to emitter style.
   #
-  # Deliberately AFTER (1) and tolerant of failure: this is the only step that needs oxfmt to parse
+  # Deliberately after (1) and tolerant of failure: this is the only step that needs oxfmt to parse
   # openapi-format's output, and on the cloudflare corpus it cannot. openapi-format re-emits the
   # source's quoted key `'... Further paths ...'` unquoted, and oxc's YAML parser rejects a plain
   # scalar beginning with `...` ("expected a node") even though YAML 1.2 only reserves `...` when it
   # is alone on a line. That is a pre-existing parser limitation, unrelated to key ordering -- the
-  # ORIGINAL spec has the key quoted and formats fine -- so it must not be allowed to mask (1).
+  # original spec has the key quoted and formats fine, so it must not be allowed to mask (1).
   if cp "${ref}" "${ref_fixed}" && "${OXFMT}" --write "${ref_fixed}" >"${OUT_DIR}/${name}.reformat.log" 2>&1; then
     if cmp -s "${ref_fixed}" "${ours}"; then
       info "byte fixed point also holds: oxfmt(openapi-format(x)) == oxfmt(x)"
@@ -372,7 +372,7 @@ verify_corpus() {
     fi
   else
     SKIPS=$((SKIPS + 1))
-    info "byte fixed point NOT MEASURED: oxfmt cannot re-read openapi-format's output --"
+    info "byte fixed point not measured: oxfmt cannot re-read openapi-format's output;"
     info "  $(grep -m1 'Syntax error' "${OUT_DIR}/${name}.reformat.log" || echo 'see the log')"
   fi
 
@@ -382,7 +382,7 @@ verify_corpus() {
   if cmp -s "${ours}" "${twice}"; then
     pass "idempotent: oxfmt(oxfmt(x)) == oxfmt(x)"
   else
-    fail "NOT idempotent for ${name}"
+    fail "not idempotent for ${name}"
     diff -u "${ours}" "${twice}" | head -20 >&2 || true
   fi
 
@@ -399,7 +399,7 @@ verify_corpus() {
     fail "oxfmt changed comment-like line count: ${src_hash} -> ${ours_hash}"
   fi
 
-  # (4) A synthetic probe, because the corpora carry almost no REAL comments -- nearly every `#`
+  # (4) A synthetic probe, because the corpora carry almost no real comments. Nearly every `#`
   # above is Markdown inside a block scalar. Without this, "comments preserved" would be a claim
   # about content that no comment ever touched.
   local probe="${OUT_DIR}/${name}.probe.yaml" probe_out="${OUT_DIR}/${name}.probe.oxfmt.yaml"
@@ -412,7 +412,7 @@ verify_corpus() {
   if grep -q '^# oxfmt-probe-leading$' "${probe_out}"; then
     pass "synthetic comment survived oxfmt"
   else
-    fail "synthetic comment LOST by oxfmt"
+    fail "synthetic comment lost by oxfmt"
   fi
   local probe_ref="${OUT_DIR}/${name}.probe.reference.yaml"
   NODE_OPTIONS="--max-old-space-size=${NODE_HEAP}" \
@@ -433,16 +433,16 @@ bench_corpus() {
   section "${name}: timings"
   need hyperfine "cargo install hyperfine"
 
-  # `--write` needs UNFORMATTED input on every iteration, or from the second run onward it would be
+  # `--write` needs unformatted input on every iteration, or from the second run onward it would be
   # timed on already-sorted bytes. The re-copy therefore goes in `--prepare`, which hyperfine runs
-  # OUTSIDE the measured interval: putting it inside the timed command charges oxfmt for a file copy
+  # outside the measured interval: putting it inside the timed command charges oxfmt for a file copy
   # its competitor never pays, which is 23% of the petstore figure and ~3% of the large ones.
   #
   # `--check` is timed on an already-formatted copy, which is the realistic case (CI checking a
   # formatted tree). Pointing it at unformatted input would exit 1 -- correctly, the file does need
   # formatting -- and hyperfine aborts on a non-zero exit.
   #
-  # NOTE the two oxfmt rows are not comparable with the openapi-format row on equal terms: openapi-
+  # Note the two oxfmt rows are not comparable with the openapi-format row on equal terms: openapi-
   # format is always given unformatted input and always writes a new file. hyperfine's own Summary
   # block cross-compares all three regardless, so it is suppressed with `--style basic` and the
   # per-command means are what should be quoted.
@@ -470,11 +470,11 @@ bench_corpus() {
 
 # --- self-test ---------------------------------------------------------------------------------
 
-# Proves each assertion FAILS when it should. A harness that cannot fail is worse than none: it
+# Proves each assertion fails when it should. A harness that cannot fail is worse than none: it
 # reports success whether or not the tools agree.
 #
 # Every case re-invokes this script for real, with SELF_TEST_FAULT set, and requires a non-zero exit
-# and the expected FAIL line. Nothing here inspects a helper in isolation: an earlier version of this
+# and the expected `FAIL` line. Nothing here inspects a helper in isolation: an earlier version of this
 # self-test did exactly that, and it still reported "5/5 assertions demonstrated able to fail" after
 # the load-bearing key-order comparison had been replaced by `exit 0`.
 
@@ -516,7 +516,7 @@ self_test() {
     return
   fi
 
-  # The fixture must PASS clean, or every failure below could be the fixture rather than the fault.
+  # The fixture must pass clean, or every failure below could be the fixture rather than the fault.
   local clean_status=0
   ONLY="${SELF_TEST_CORPUS}" SELF_TEST_FAULT="" bash "${SELF}" --verify \
     >"${OUT_DIR}/selftest-clean.log" 2>&1 || clean_status=$?
@@ -527,7 +527,7 @@ self_test() {
     tail -5 "${OUT_DIR}/selftest-clean.log" >&2
     return
   else
-    fail "the self-test fixture does NOT pass clean (exit ${clean_status}); the cases below prove nothing"
+    fail "the self-test fixture does not pass clean (exit ${clean_status}); the cases below prove nothing"
     tail -20 "${OUT_DIR}/selftest-clean.log" >&2
     return
   fi
@@ -547,7 +547,7 @@ self_test() {
     ONLY="${SELF_TEST_CORPUS}" SELF_TEST_FAULT="${fault}" bash "${SELF}" --verify \
       >"${log}" 2>&1 || status=$?
     if [[ ${status} -eq 0 ]]; then
-      fail "fault '${fault}' did NOT make the run fail -- the assertion on '${expect}' cannot fire"
+      fail "fault '${fault}' did not make the run fail, so the assertion on '${expect}' cannot fire"
     elif [[ ${status} -eq 126 || ${status} -eq 127 ]]; then
       # A non-zero exit that is not an assertion failure must not be counted as a caught fault.
       fail "fault '${fault}': could not re-invoke myself (exit ${status}), so nothing was exercised"
@@ -589,7 +589,7 @@ main() {
   fi
 
   section "Summary"
-  [[ ${SKIPS} -eq 0 ]] || info "${SKIPS} diagnostic(s) not measured -- see the NOT MEASURED lines above"
+  [[ ${SKIPS} -eq 0 ]] || info "${SKIPS} diagnostic(s) not measured; see the 'not measured' lines above"
   if [[ ${FAILURES} -eq 0 ]]; then
     pass "all assertions held"
   else

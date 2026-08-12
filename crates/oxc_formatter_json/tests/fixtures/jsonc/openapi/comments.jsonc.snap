@@ -2,7 +2,7 @@
 source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-// The `jsonc` variant, and a BLOCK comment: same refusal, and it applies to every comment kind.
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
 //
 // `/ordered` has none and is reordered, so the refusal stays per-object across variants.
 {
@@ -25,7 +25,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ------------------------------------
 { printWidth: 80, variant: "jsonc" }
 ------------------------------------
-// The `jsonc` variant, and a BLOCK comment: same refusal, and it applies to every comment kind.
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
 //
 // `/ordered` has none and is reordered, so the refusal stays per-object across variants.
 {
@@ -47,7 +47,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 -------------------------------------
 { printWidth: 100, variant: "jsonc" }
 -------------------------------------
-// The `jsonc` variant, and a BLOCK comment: same refusal, and it applies to every comment kind.
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
 //
 // `/ordered` has none and is reordered, so the refusal stays per-object across variants.
 {
@@ -69,7 +69,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 -----------------------------------------------------------
 { printWidth: 80, trailingComma: "none", variant: "jsonc" }
 -----------------------------------------------------------
-// The `jsonc` variant, and a BLOCK comment: same refusal, and it applies to every comment kind.
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
 //
 // `/ordered` has none and is reordered, so the refusal stays per-object across variants.
 {
@@ -91,7 +91,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ------------------------------------------------------------
 { printWidth: 100, trailingComma: "none", variant: "jsonc" }
 ------------------------------------------------------------
-// The `jsonc` variant, and a BLOCK comment: same refusal, and it applies to every comment kind.
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
 //
 // `/ordered` has none and is reordered, so the refusal stays per-object across variants.
 {

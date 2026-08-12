@@ -1,8 +1,8 @@
 //! An independent transcription of openapi-format's `openapiSort` traversal.
 //!
 //! This is the oracle. It is written from the reference's JavaScript, arm by arm and guard by
-//! guard, and deliberately shares NO code with `oxc_openapi_order` — otherwise the differential
-//! test would only prove the crate agrees with itself.
+//! guard, and deliberately shares no code with `oxc_openapi_order`, or the differential test would
+//! only prove the crate agrees with itself.
 //!
 //! It reproduces the reference's JavaScript-object artifacts on purpose (index-key bucketing, the
 //! sequence-to-mapping rebuild, the dropped `__proto__`), so the comparison can attribute them
@@ -23,11 +23,11 @@ pub struct RefOptions {
 }
 
 /// One segment of the reference's `this.path`. Array indices are segments too, and they are
-/// strings — verified directly against neotraverse.
+/// strings, verified directly against neotraverse.
 #[derive(Debug, Clone)]
 pub enum Seg {
     Key(String),
-    /// The position is deliberately not carried: every guard compares a segment against a NAME,
+    /// The position is deliberately not carried: every guard compares a segment against a name,
     /// and an index segment stringifies to a decimal that matches none of them. What matters is
     /// only that the segment occupies an absolute slot.
     Index,
@@ -82,11 +82,11 @@ fn table(name: &str) -> Option<&'static [&'static str]> {
     })
 }
 
-/// The table a mapping's PARENT applies to it, when the parent is in child role.
+/// The table a mapping's parent applies to it, when the parent is in child role.
 ///
 /// `parent` is the parent's own path. This is the reference's first write for a mapping that its
-/// parent orders and that then orders itself — the composition the tie-order divergence comes from.
-/// The crate's `resolve` deliberately cannot answer this: it reports the ONE table that wins, so the
+/// parent orders and that then orders itself, the composition the tie-order divergence comes from.
+/// The crate's `resolve` deliberately cannot answer this: it reports the one table that wins, so the
 /// losing write is invisible there and has to be reconstructed here.
 pub fn child_role_table(parent: &[Seg]) -> Option<&'static [&'static str]> {
     let key = seg_back(parent, 0)?;
@@ -140,7 +140,7 @@ fn priority_sort_map(entries: &mut Vec<(String, Value)>, priority: &[&str]) {
 ///
 /// The reference guards with `typeof x === "object"`, which is true for arrays, then rebuilds with
 /// `Object.keys(..).reduce(.., {})`. A sequence therefore comes back as a mapping keyed by index,
-/// for ANY table including the empty one.
+/// for any table including the empty one.
 fn priority_sort(value: &mut Value, priority: &[&str]) {
     match value {
         Value::Map(entries) => priority_sort_map(entries, priority),

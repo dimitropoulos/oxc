@@ -39,7 +39,7 @@ enum ItemTail {
     /// Also every sequence-item block scalar, direct or not
     /// (Prettier's `shouldOwnEndComment` has no block-scalar exclusion for sequence items).
     EndsInBlockScalar,
-    /// The item's VALUE is a block scalar (mapping only):
+    /// The item's value is a block scalar (mapping only):
     /// it cannot own end comments either
     /// (Prettier's `shouldOwnEndComment` exclusion, an ancestor whose value is a collection still can);
     /// skip both, the comments fall through to the enclosing container or the next node's leading position.
@@ -54,7 +54,7 @@ enum Separator {
     /// Measure the source gap between the two adjacent items (`next_start`).
     Measured(u32),
     /// The items were permuted, so the source gap between two now-adjacent items says nothing.
-    /// `blank_before` is the blank-line fact captured from the SOURCE order before anything moved,
+    /// `blank_before` is the blank-line fact captured from the source order before anything moved,
     /// which travels with the item it preceded. `next_start` still bounds the end-comment flush, and
     /// `mapping_end` is carried only to assert the invariant in `finish_previous_item`.
     Permuted { next_start: u32, blank_before: bool, mapping_end: u32 },
@@ -103,7 +103,7 @@ fn finish_previous_item(
             // handed an inverted range. That is safe only because a mapping reorders only when no
             // comment is pending before its scope end, which is at or past `mapping_end`: such a
             // comment cannot be claimed by either pass, so neither reaches its unguarded slicing.
-            // Assert the premise rather than trust it -- a pending comment BEYOND the mapping is
+            // Assert the premise rather than trust it: a pending comment beyond the mapping is
             // normal and harmless, one inside it would not be.
             debug_assert!(
                 f.context().comments().peek().is_none_or(|c| c.span.start >= mapping_end),
@@ -226,7 +226,7 @@ pub fn write_sequence<'a>(sequence: &'a Sequence<'a>, f: &mut YamlFormatter<'_, 
             write!(f, "-");
         }
         if let Some(node) = &item.content {
-            // The element's ancestry step. A block mapping cannot appear inside a FLOW collection,
+            // The element's ancestry step. A block mapping cannot appear inside a flow collection,
             // so `write_flow_sequence` needs no equivalent: no mapping below it is ever reordered.
             let step = Step::index(index);
             write!(

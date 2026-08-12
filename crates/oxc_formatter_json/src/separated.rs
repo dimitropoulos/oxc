@@ -51,7 +51,7 @@ impl TrailingSeparator {
 ///
 /// `permutation` reorders the entries (OpenAPI key ordering). When it is `Some`, the source gap
 /// between two now-adjacent entries is meaningless, so the separator uses the blank-line fact captured
-/// from the SOURCE order instead. `emit_entry` still receives SOURCE indices.
+/// from the source order instead. `emit_entry` still receives source indices.
 pub fn write_separated<'a, F>(
     f: &mut JsonFormatter<'_, 'a>,
     spans: &[Span],
@@ -122,14 +122,14 @@ fn write_trailing_separator(upper_bound: u32, f: &mut JsonFormatter<'_, '_>) {
     write!(f, if_group_breaks(&","));
 }
 
-/// The separator between two PERMUTED entries.
+/// The separator between two permuted entries.
 ///
-/// The source gap says nothing once entries move, so `blank` is the fact captured from the SOURCE
+/// The source gap says nothing once entries move, so `blank` is the fact captured from the source
 /// order before permuting: a blank line travels with the entry it preceded. No comment can be pending
-/// here -- an object only reorders when none is inside it -- so there is nothing to thread around the
-/// comma.
+/// here, since an object only reorders when none is inside it, so there is nothing to thread around
+/// the comma.
 fn write_permuted_separator(blank: bool, object_end: u32, f: &mut JsonFormatter<'_, '_>) {
-    // Assert the premise rather than trust it. A pending comment BEYOND the closing brace is normal
+    // Assert the premise rather than trust it. A pending comment beyond the closing brace is normal
     // and harmless; one inside would mean the bail-out let a reorderable object keep a comment.
     debug_assert!(
         f.context().comments().peek().is_none_or(|c| c.span.start >= object_end),

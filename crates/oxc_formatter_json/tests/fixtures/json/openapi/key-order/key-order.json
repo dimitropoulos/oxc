@@ -1,4 +1,4 @@
-// `sortOpenapi.keyOrder` replaces ONE table and leaves every other one intact.
+// `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
 //
 // The JSON twin of the YAML backend's `key-order` fixture, and it must produce the same order.
 //
@@ -6,7 +6,7 @@
 // `operationId`). So:
 //
 // `get`  -> the override: `summary`, `operationId`, then the unlisted keys case-insensitively.
-// `post` -> UNTOUCHED, built-in table, `operationId` first. That is the layering: upstream's
+// `post` -> untouched, built-in table, `operationId` first. That is the layering: upstream's
 //           `--sortFile` replaces the whole set, so naming only `get` there would silently disable
 //           `post`, `requestBody` and `responses` too.
 {

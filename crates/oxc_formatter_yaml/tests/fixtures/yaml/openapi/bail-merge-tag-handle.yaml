@@ -1,8 +1,8 @@
-# BAIL-OUT 3, at the edge where the merge tag is not spelled `!!merge`.
+# Bail-out 3, at the edge where the merge tag is not spelled `!!merge`.
 #
 # `%TAG` can bind any handle to `tag:yaml.org,2002:`, and this parser stores directives
 # uninterpreted, so a literal match on `!!merge` misses `!m!merge`. That is not cosmetic: two merge
-# keys have order-dependent precedence, so missing one changes the document's merged VALUE. Verified
+# keys have order-dependent precedence, so missing one changes the document's merged value. Verified
 # with `yaml@2`: before this refusal, the output below parsed with `q: 9` instead of `q: 1`.
 %TAG !m! tag:yaml.org,2002:
 ---

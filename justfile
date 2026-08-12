@@ -313,7 +313,7 @@ formatter-config-ts:
 #
 # The differential test compares our ordering against a Rust transcription of openapi-format; this
 # checks that transcription against the actual package, which is the one thing that test cannot check
-# itself. Nothing in CI runs it — it needs Node and a network install — so run it after touching
+# itself. Nothing in CI runs it, since it needs Node and a network install, so run it after touching
 # `reference.rs` or the tables.
 validate-openapi-reference:
   #!/usr/bin/env bash

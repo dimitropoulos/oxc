@@ -3,7 +3,7 @@ source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
 # Keys the table does not name come after the ranked ones, compared case-insensitively, with
-# ties keeping SOURCE order: `Alpha` before `alpha` and `Type` before `type`, because that is
+# ties keeping source order: `Alpha` before `alpha` and `Type` before `type`, because that is
 # how they appear below.
 #
 # `content`'s table is empty, which is not the same as having no table: an empty table ranks
@@ -30,7 +30,7 @@ paths:
 { printWidth: 80 }
 ------------------
 # Keys the table does not name come after the ranked ones, compared case-insensitively, with
-# ties keeping SOURCE order: `Alpha` before `alpha` and `Type` before `type`, because that is
+# ties keeping source order: `Alpha` before `alpha` and `Type` before `type`, because that is
 # how they appear below.
 #
 # `content`'s table is empty, which is not the same as having no table: an empty table ranks
@@ -56,7 +56,7 @@ paths:
 { printWidth: 100 }
 -------------------
 # Keys the table does not name come after the ranked ones, compared case-insensitively, with
-# ties keeping SOURCE order: `Alpha` before `alpha` and `Type` before `type`, because that is
+# ties keeping source order: `Alpha` before `alpha` and `Type` before `type`, because that is
 # how they appear below.
 #
 # `content`'s table is empty, which is not the same as having no table: an empty table ranks

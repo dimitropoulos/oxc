@@ -4,14 +4,14 @@ source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ==================== Input ====================
 # A blank line travels with the entry it preceded.
 #
-# Blank-line preservation normally measures the source gap between two ADJACENT entries, which
-# says nothing once entries move. The fact is therefore captured per entry in SOURCE order
+# Blank-line preservation normally measures the source gap between two adjacent entries, which
+# says nothing once entries move. The fact is therefore captured per entry in source order
 # before permuting, then consulted through the permutation.
 #
 # `/travels`: the blank precedes `summary` in the source, and follows it to its new position
 # between `operationId` and `responses`.
 #
-# `/to-front`: the blank precedes `operationId`, which ordering moves to FIRST position. There
+# `/to-front`: the blank precedes `operationId`, which ordering moves to first position. There
 # is no preceding entry to separate it from, so the blank is dropped. Nothing else can happen --
 # a blank line between `get:` and its first entry is already dropped without this feature.
 openapi: 3.0.0
@@ -34,14 +34,14 @@ paths:
 ------------------
 # A blank line travels with the entry it preceded.
 #
-# Blank-line preservation normally measures the source gap between two ADJACENT entries, which
-# says nothing once entries move. The fact is therefore captured per entry in SOURCE order
+# Blank-line preservation normally measures the source gap between two adjacent entries, which
+# says nothing once entries move. The fact is therefore captured per entry in source order
 # before permuting, then consulted through the permutation.
 #
 # `/travels`: the blank precedes `summary` in the source, and follows it to its new position
 # between `operationId` and `responses`.
 #
-# `/to-front`: the blank precedes `operationId`, which ordering moves to FIRST position. There
+# `/to-front`: the blank precedes `operationId`, which ordering moves to first position. There
 # is no preceding entry to separate it from, so the blank is dropped. Nothing else can happen --
 # a blank line between `get:` and its first entry is already dropped without this feature.
 openapi: 3.0.0
@@ -62,14 +62,14 @@ paths:
 -------------------
 # A blank line travels with the entry it preceded.
 #
-# Blank-line preservation normally measures the source gap between two ADJACENT entries, which
-# says nothing once entries move. The fact is therefore captured per entry in SOURCE order
+# Blank-line preservation normally measures the source gap between two adjacent entries, which
+# says nothing once entries move. The fact is therefore captured per entry in source order
 # before permuting, then consulted through the permutation.
 #
 # `/travels`: the blank precedes `summary` in the source, and follows it to its new position
 # between `operationId` and `responses`.
 #
-# `/to-front`: the blank precedes `operationId`, which ordering moves to FIRST position. There
+# `/to-front`: the blank precedes `operationId`, which ordering moves to first position. There
 # is no preceding entry to separate it from, so the blank is dropped. Nothing else can happen --
 # a blank line between `get:` and its first entry is already dropped without this feature.
 openapi: 3.0.0

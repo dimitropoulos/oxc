@@ -43,35 +43,35 @@ Stream-tail end comments (`write_end_comments`) are the one document-layer excep
 
 ### OpenAPI key ordering (`sortOpenapi`)
 
-Oxfmt's own extension, not a Prettier option, and ON by default — so an OpenAPI document's key order
+Oxfmt's own extension, not a Prettier option, and on by default, so an OpenAPI document's key order
 deliberately differs from Prettier's. Content-gated: nothing is reordered unless the document's root
 mapping has an `openapi` key, and a document without one is byte-identical with it on.
 
-- The ordering POLICY is `oxc_openapi_order` (no AST, no allocator, no dependencies), shared with the
+- The ordering policy is `oxc_openapi_order` (no AST, no allocator, no dependencies), shared with the
   JSON backend so it is defined once. Its docs carry the rule and the deliberate divergences from
   openapi-format. The per-run state is that crate's `Session`, also shared, so a mapping's ordering
   is set up exactly one way in both backends; only the anchor/alias index is YAML-side.
 - The printer side is `src/print/openapi.rs`: the ancestry the policy needs, the refusals, and the
   blank-line snapshot. `write_mapping` iterates through an optional permutation.
-- Reordering is REFUSED, leaving source order, by one function (`may_reorder`) whenever it would not
+- Reordering is refused, leaving source order, by one function (`may_reorder`) whenever it would not
   be safe. Refusing is always safe; the feature degrades to a no-op for that mapping alone. Each
   branch is pinned by a fixture under `tests/fixtures/yaml/openapi/`.
   - The comment refusals are what keep this feature inside the comment placement invariants above:
     reordering entries moves user content across a comment, so the only invariant-clean reordering is
-    one with no comment in play. Note there are TWO — a comment in the mapping's printing scope, and
-    a comment run directly above the mapping when ordering would put a different entry under it. The
+    one with no comment in play. There are two: a comment in the mapping's printing scope, and a
+    comment run directly above the mapping when ordering would put a different entry under it. The
     second is invisible to the comment cursor's pending side, because a block mapping's span starts
     at its first entry, so that run is already drained by the time the mapping is reached.
-  - EVERY refusal must survive its own output, or the first pass refuses and the second reorders.
+  - Every refusal must survive its own output, or the first pass refuses and the second reorders.
     Three bugs of exactly that shape were found by the fixture harness's idempotency check: refusing
     an explicit `? key` (the printer normalises it away), branching on which quote the source used
     (the printer picks the quote), and counting raw trailing newlines on a block scalar (an empty
     body shifts the count by one).
-- Blank lines: measured per entry in SOURCE order before permuting, then consulted through the
-  permutation, so a blank travels with its entry. A blank before the entry that ends up FIRST is
-  dropped — there is no preceding entry to separate it from, and a blank between a key and its first
-  child is already dropped without this feature.
-- The `ItemTail` / block-scalar handoff is unchanged. It is the block scalar's POSITION dependence
+- Blank lines: measured per entry in source order before permuting, then consulted through the
+  permutation, so a blank travels with its entry. A blank before the entry that ends up first is
+  dropped, since there is no preceding entry to separate it from, and a blank between a key and its
+  first child is already dropped without this feature.
+- The `ItemTail` / block-scalar handoff is unchanged. It is the block scalar's position dependence
   (`is_last_descendant`, `ends_with_keep_chomped_block`, both computed from source order) that is
   unsafe under permutation, and `may_reorder` refuses those entries instead.
 

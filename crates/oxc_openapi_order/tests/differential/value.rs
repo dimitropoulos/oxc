@@ -8,8 +8,8 @@ use std::fmt::Write as _;
 
 /// A JSON value.
 ///
-/// Scalars carry their TYPE, not just their text, because the reference's root gate is JavaScript
-/// truthiness of the `openapi` member — and the string `"0"` is truthy while the number `0` is not.
+/// Scalars carry their type, not just their text, because the reference's root gate is JavaScript
+/// truthiness of the `openapi` member, and the string `"0"` is truthy while the number `0` is not.
 /// A single stringly-typed scalar variant cannot tell those apart.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
@@ -36,8 +36,8 @@ impl Value {
 
     /// JavaScript truthiness, which is what the reference's `if (jsonObj.openapi)` gate tests.
     ///
-    /// Note `Value::String("0")` is TRUE (only the empty string is falsy) while
-    /// `Value::Number("0")` is false, and an empty object or array is true.
+    /// `Value::String("0")` is true (only the empty string is falsy) while `Value::Number("0")` is
+    /// false, and an empty object or array is true.
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Null => false,
@@ -131,7 +131,7 @@ pub fn array_index_key(key: &str) -> Option<u32> {
 /// ascending numeric order, then every other key in insertion order.
 ///
 /// This is ECMAScript's `OrdinaryOwnPropertyKeys`, a property of the object representation rather
-/// than of any ordering rule. It applies to every mapping the reference builds — including the
+/// than of any ordering rule. It applies to every mapping the reference builds, including the
 /// one its `prioritySort` returns, so it overrides even the table ranking.
 pub fn js_key_order(keys: &[&str]) -> Vec<usize> {
     let mut order: Vec<usize> = (0..keys.len()).collect();

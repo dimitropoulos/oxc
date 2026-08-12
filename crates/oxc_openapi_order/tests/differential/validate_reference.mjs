@@ -1,4 +1,4 @@
-// Validates `reference.rs` — the Rust transcription of openapi-format's ordering pass — against
+// Validates `reference.rs`, the Rust transcription of openapi-format's ordering pass, against
 // the real package.
 //
 // `reference.rs` is the oracle the differential test compares against, so its fidelity is the one
@@ -26,7 +26,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 
-// Resolved EXPLICITLY, from an env var first and only then the cwd.
+// Resolved explicitly, from an env var first and only then the cwd.
 //
 // The cwd-only version of this failed for a maintainer: `require` resolves from the path given to
 // `createRequire`, so it only worked when run from inside a directory that already had

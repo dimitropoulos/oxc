@@ -1,7 +1,7 @@
 //! Key and segment comparison, matching JavaScript's string relational operators.
 //!
 //! Upstream compares keys with `a.toLowerCase() > b.toLowerCase()` and path segments with
-//! bare `<` / `>`. JS string comparison orders by UTF-16 CODE UNIT, which is neither Rust's
+//! bare `<` / `>`. JS string comparison orders by UTF-16 code unit, which is neither Rust's
 //! `str: Ord` (UTF-8 byte order, i.e. code-point order) nor a `char`-wise comparison of the
 //! lowercased text. The two disagree whenever a key mixes astral characters (U+10000 and
 //! above, encoded as a surrogate pair whose lead unit is 0xD800..=0xDBFF) with characters in
@@ -13,22 +13,22 @@
 //! ```
 //!
 //! Full case mapping matters for the same reason. `char::to_lowercase` is a full Unicode
-//! mapping, so it can change a character's LENGTH, and that is observable in the ordering:
+//! mapping, so it can change a character's length, and that is observable in the ordering:
 //!
-//! - `Ä` lowercases to `ä` (U+00E4), which sorts AFTER `z` (U+007A).
-//! - `İ` (U+0130) lowercases to `i` + U+0307, so it sorts BEFORE `z` on its first unit.
-//! - `K` (U+212A, KELVIN SIGN) lowercases to `k`, TYING with a literal `k`.
+//! - `Ä` lowercases to `ä` (U+00E4), which sorts after `z` (U+007A).
+//! - `İ` (U+0130) lowercases to `i` + U+0307, so it sorts before `z` on its first unit.
+//! - `K` (U+212A, KELVIN SIGN) lowercases to `k`, tying with a literal `k`.
 //!
 //! An ASCII-only comparison silently passes every ASCII test and gets all three wrong, so
-//! the ASCII fast path here is taken only when BOTH sides are wholly ASCII. For pure ASCII,
+//! the ASCII fast path here is taken only when both sides are wholly ASCII. For pure ASCII,
 //! byte order and UTF-16 code-unit order coincide, so the fast path is exact.
 //!
 //! One case needs more than per-character mapping: `String.prototype.toLowerCase` is
-//! CONTEXT-SENSITIVE for U+03A3 (Greek capital sigma), which lowercases to `ς` at the end of a
+//! context-sensitive for U+03A3 (Greek capital sigma), which lowercases to `ς` at the end of a
 //! word and `σ` elsewhere (Unicode's `Final_Sigma`). `char::to_lowercase` cannot see context and
-//! always answers `σ`. U+03A3 is the only code point where this happens — verified exhaustively
-//! over every code point in four contexts — so it gets a narrow, allocating fallback and
-//! everything else stays allocation-free.
+//! always answers `σ`. U+03A3 is the only code point where the two mappings differ, since
+//! `Final_Sigma` is the only conditional mapping `str::to_lowercase` implements, so it gets a
+//! narrow allocating fallback and everything else stays allocation-free.
 
 use std::cmp::Ordering;
 
@@ -59,9 +59,9 @@ pub fn cmp_lowercase(a: &str, b: &str) -> Ordering {
     if a.contains(CAPITAL_SIGMA) || b.contains(CAPITAL_SIGMA) {
         // `Final_Sigma` needs the whole string, so fall back to the standard-library mapping,
         // which implements it. `cow_utils` is not an option here: this crate is deliberately
-        // dependency-free, and a `Cow` would not help anyway — the mapping always changes these
-        // strings, so the allocation is unavoidable. It is gated behind a code point that a real
-        // OpenAPI key essentially never contains.
+        // dependency-free, and a `Cow` would not help anyway, because the mapping always changes
+        // these strings, so the allocation is unavoidable. It is gated behind a code point that a
+        // real OpenAPI key essentially never contains.
         #[expect(clippy::disallowed_methods, reason = "needs context-sensitive Final_Sigma")]
         return a.to_lowercase().encode_utf16().cmp(b.to_lowercase().encode_utf16());
     }
@@ -134,11 +134,11 @@ mod tests {
     #[test]
     fn final_sigma_is_context_sensitive() {
         // JS: "ΑΣ".toLowerCase() == "ας" (U+03C2, final form), so it sorts BEFORE "ασ"
-        // (U+03C3) -- 0x3C2 < 0x3C3. A per-character mapping answers U+03C3 for both and
+        // (U+03C3), since 0x3C2 < 0x3C3. A per-character mapping answers U+03C3 for both and
         // wrongly calls them equal.
         assert_eq!(cmp_lowercase("\u{391}\u{3a3}", "\u{391}\u{3c3}"), Ordering::Less);
         assert_eq!(cmp_lowercase("\u{391}\u{3c3}", "\u{391}\u{3a3}"), Ordering::Greater);
-        // Non-final sigma keeps the ordinary mapping, so these two ARE equal.
+        // Non-final sigma keeps the ordinary mapping, so these two are equal.
         assert_eq!(
             cmp_lowercase("\u{391}\u{3a3}\u{391}", "\u{391}\u{3c3}\u{391}"),
             Ordering::Equal
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn sharp_s_lowercases_to_itself() {
-        // "ß".toLowerCase() == "ß" (only UPPERcasing expands it), so it sorts after "ss".
+        // "ß".toLowerCase() == "ß" (only uppercasing expands it), so it sorts after "ss".
         assert_eq!(cmp_lowercase("\u{df}", "ss"), Ordering::Greater);
     }
 

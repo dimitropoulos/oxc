@@ -3,7 +3,7 @@ source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
 # With the option off, an OpenAPI document is byte-identical. This is the same shape as
-# `../tables.yaml`, which IS reordered, so the pair pins that the option is what does it.
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
 info:
   version: 1.0.0
   title: Demo
@@ -23,7 +23,7 @@ paths:
 { printWidth: 80, sortOpenapi: false }
 --------------------------------------
 # With the option off, an OpenAPI document is byte-identical. This is the same shape as
-# `../tables.yaml`, which IS reordered, so the pair pins that the option is what does it.
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
 info:
   version: 1.0.0
   title: Demo
@@ -42,7 +42,7 @@ paths:
 { printWidth: 100, sortOpenapi: false }
 ---------------------------------------
 # With the option off, an OpenAPI document is byte-identical. This is the same shape as
-# `../tables.yaml`, which IS reordered, so the pair pins that the option is what does it.
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
 info:
   version: 1.0.0
   title: Demo

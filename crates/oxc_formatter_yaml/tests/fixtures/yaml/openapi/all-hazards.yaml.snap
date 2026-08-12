@@ -4,8 +4,8 @@ source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ==================== Input ====================
 # Comments, anchors, aliases and merge keys in one document, all preserved.
 #
-# Required by the DEFINITION OF DONE. Each hazard refuses its own mapping and nothing else:
-# `/ordered` at the bottom has none of them and IS reordered, so this fixture also shows that
+# Required by the definition of done. Each hazard refuses its own mapping and nothing else:
+# `/ordered` at the bottom has none of them and is reordered, so this fixture also shows that
 # the refusals are local.
 openapi: 3.0.0
 defaults: &defaults
@@ -51,8 +51,8 @@ paths:
 ------------------
 # Comments, anchors, aliases and merge keys in one document, all preserved.
 #
-# Required by the DEFINITION OF DONE. Each hazard refuses its own mapping and nothing else:
-# `/ordered` at the bottom has none of them and IS reordered, so this fixture also shows that
+# Required by the definition of done. Each hazard refuses its own mapping and nothing else:
+# `/ordered` at the bottom has none of them and is reordered, so this fixture also shows that
 # the refusals are local.
 openapi: 3.0.0
 defaults: &defaults
@@ -97,8 +97,8 @@ paths:
 -------------------
 # Comments, anchors, aliases and merge keys in one document, all preserved.
 #
-# Required by the DEFINITION OF DONE. Each hazard refuses its own mapping and nothing else:
-# `/ordered` at the bottom has none of them and IS reordered, so this fixture also shows that
+# Required by the definition of done. Each hazard refuses its own mapping and nothing else:
+# `/ordered` at the bottom has none of them and is reordered, so this fixture also shows that
 # the refusals are local.
 openapi: 3.0.0
 defaults: &defaults

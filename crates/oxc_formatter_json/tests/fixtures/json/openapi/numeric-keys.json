@@ -1,20 +1,20 @@
-// A numeric key is READ, not refused -- and the two spellings must agree.
+// A numeric key is read, not refused -- and the two spellings must agree.
 //
 // The `json` variant quotes a numeric key it can round-trip, so refusing them would refuse the first
 // pass and then read `"42"` as an ordinary string key on the second, and formatting would not be
 // idempotent. The key text therefore comes from the printer's own normaliser, which is why
 // `/bare-numeric` and `/quoted-numeric` below come out in the same relative order.
 //
-// Every key here round-trips (`String(Number(k)) == k`), so its printed text IS the property it names.
-// The keys that do NOT are a different case entirely -- see `bail-aliased-numeric-key.json`.
+// Every key here round-trips (`String(Number(k)) == k`), so its printed text is the property it names.
+// The keys that do not are a different case entirely -- see `bail-aliased-numeric-key.json`.
 //
 // `/normaliser-matters` is the one that makes the normaliser observable, and it is why the other two
-// are not enough: `1.50` and `"1.5"` are ONE property written twice, and they only tie -- and so only
+// are not enough: `1.50` and `"1.5"` are one property written twice, and they only tie -- and so only
 // keep last-one-wins -- because the key is read as `1.5` rather than as its raw source text. Ordering
 // by the raw slice reverses them and changes what the document means, with every other case here still
 // passing.
 //
-// Note the ordering is by TEXT, never numeric: `10` precedes `2`. The reference would answer `2, 10`.
+// Note the ordering is by text, never numeric: `10` precedes `2`. The reference would answer `2, 10`.
 {
   "openapi": "3.0.0",
   "paths": {

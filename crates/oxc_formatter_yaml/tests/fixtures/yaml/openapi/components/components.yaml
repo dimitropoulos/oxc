@@ -1,14 +1,14 @@
 # `sortOpenapi.components: true` orders the members of every direct member of the root `components`
 # mapping alphabetically. Off by default.
 #
-# It is the CHILDREN of `components.<type>` that move, not `components`' own entries -- those are
+# It is the children of `components.<type>` that move, not `components`' own entries -- those are
 # ordered by the `components` table either way. So `schemas` keeps its table position while `Zebra`,
 # `alpha` and `Beta` inside it are reordered.
 #
-# Alphabetical here means the key comparator: case-INSENSITIVE, so `alpha` precedes `Beta` precedes
+# Alphabetical here means the key comparator: case-insensitive, so `alpha` precedes `Beta` precedes
 # `Zebra`. Contrast `paths-path`, which is case-sensitive.
 #
-# `parameters` shows the precedence: its key HAS a table, and rule 1 beats the alphabetical pass, so it
+# `parameters` shows the precedence: its key has a table, and rule 1 beats the alphabetical pass, so it
 # comes out in table order (`name`, `in`, ...) rather than alphabetically. Verified against the
 # reference, which yields [name, in, schema, aaa, zzz].
 openapi: 3.0.0

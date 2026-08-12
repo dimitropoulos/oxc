@@ -1,7 +1,8 @@
 use oxc_benchmark::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use oxc_openapi_order::{Scratch, Table, permutation};
 
-/// The `get` / `post` / ... table, which is the one most mappings in a real spec resolve to.
+/// The `get` / `post` / ... table, which is the one most mappings in a real spec resolve to,
+/// plus `tags` so the table is one entry wider than the six-entry built-in.
 const OPERATION: &[&str] =
     &["operationId", "summary", "description", "parameters", "requestBody", "responses", "tags"];
 

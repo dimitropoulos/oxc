@@ -2,14 +2,14 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# BAIL-OUT 2 of 5: an anchor or alias inside the mapping.
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
 #
-# YAML requires an anchor to precede its alias, so reordering could emit a file that DOES
-# NOT PARSE. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
 # never meets it because its JSON round-trip expands aliases away.
 #
 # Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
-# CONTAINS them is not an anchor, and that mapping is still ordered.
+# contains them is not an anchor, and that mapping is still ordered.
 openapi: 3.0.0
 paths:
   /anchored:
@@ -32,14 +32,14 @@ paths:
 ------------------
 { printWidth: 80 }
 ------------------
-# BAIL-OUT 2 of 5: an anchor or alias inside the mapping.
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
 #
-# YAML requires an anchor to precede its alias, so reordering could emit a file that DOES
-# NOT PARSE. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
 # never meets it because its JSON round-trip expands aliases away.
 #
 # Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
-# CONTAINS them is not an anchor, and that mapping is still ordered.
+# contains them is not an anchor, and that mapping is still ordered.
 openapi: 3.0.0
 paths:
   /anchored:
@@ -61,14 +61,14 @@ paths:
 -------------------
 { printWidth: 100 }
 -------------------
-# BAIL-OUT 2 of 5: an anchor or alias inside the mapping.
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
 #
-# YAML requires an anchor to precede its alias, so reordering could emit a file that DOES
-# NOT PARSE. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
 # never meets it because its JSON round-trip expands aliases away.
 #
 # Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
-# CONTAINS them is not an anchor, and that mapping is still ordered.
+# contains them is not an anchor, and that mapping is still ordered.
 openapi: 3.0.0
 paths:
   /anchored:

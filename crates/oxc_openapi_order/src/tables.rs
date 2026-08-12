@@ -4,14 +4,14 @@
 /// case-insensitively. This is what upstream's `prioritySort(node, [])` does, and it is
 /// also `content`'s real table.
 ///
-/// NOTE: an empty table is NOT the same as "no table". No table means keep source order;
+/// NOTE: an empty table is not the same as "no table". No table means keep source order;
 /// an empty table means alphabetical.
 pub const ALPHABETICAL: &[&str] = &[];
 
 /// The table name whose entries order the document root.
 pub const ROOT: &str = "root";
 
-/// Keys whose table orders the CHILDREN of the mapping, never the mapping's own entries
+/// Keys whose table orders the children of the mapping, never the mapping's own entries
 /// (upstream's `responses`/`schemas`/`properties` arm).
 pub const CHILD_ROLE_KEYS: [&str; 3] = ["responses", "schemas", "properties"];
 
@@ -62,7 +62,7 @@ pub const TABLES: [(&str, &[&str]); 15] = [
 /// an allocation per format run to answer a question that needs none: a table is only ever asked for
 /// a key's rank.
 ///
-/// An EMPTY table of either kind means "order alphabetically", which is NOT the same as having no
+/// An empty table of either kind means "order alphabetically", which is not the same as having no
 /// table at all ("keep source order"). That is what makes `keyOrder: { content: [] }` meaningful.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Table<'a> {
@@ -75,8 +75,8 @@ pub enum Table<'a> {
 impl Table<'_> {
     /// The position of `key`, or `None` when this table does not name it.
     ///
-    /// Case-SENSITIVE and exact: a table names a key or it does not. Case-insensitivity belongs to
-    /// the comparison of UNRANKED keys, which is a different question.
+    /// Case-sensitive and exact: a table names a key or it does not. Case-insensitivity belongs to
+    /// the comparison of unranked keys, which is a different question.
     ///
     /// # Panics
     /// Panics if the table has more than `u32::MAX` entries, which would make a real rank collide
@@ -118,11 +118,11 @@ pub fn builtin(key: &str) -> Option<&'static [&'static str]> {
 mod tests {
     use super::{ALPHABETICAL, CHILD_ROLE_KEYS, TABLES, Table, builtin};
 
-    /// Ranking is exact and case-SENSITIVE, matching upstream's `priorityArr.indexOf(key)`.
+    /// Ranking is exact and case-sensitive, matching upstream's `priorityArr.indexOf(key)`.
     ///
-    /// Asserted over BOTH representations with the same table, because the whole point of the enum is
-    /// that a user's `keyOrder` ranks identically to a built-in — if these two ever disagreed, the
-    /// same document would order differently depending on where its table came from.
+    /// Asserted over both representations with the same table: a user's `keyOrder` has to rank
+    /// identically to a built-in, or the same document would order differently depending on where
+    /// its table came from.
     #[test]
     fn rank_is_exact_and_case_sensitive_in_both_representations() {
         let builtin = Table::Builtin(&["name", "in", "schema"]);

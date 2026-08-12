@@ -1,10 +1,10 @@
-# BAIL-OUT 5 of 5 (the content gate): no `openapi` key at the document root.
+# Bail-out 5 of 5 (the content gate): no `openapi` key at the document root.
 #
-# This file must be BYTE-IDENTICAL with the feature on. Every key here is a table name and
+# This file must be byte-identical with the feature on. Every key here is a table name and
 # every mapping would be reordered if the gate were open, which is the point: the gate is what
 # stops the feature from touching arbitrary YAML.
 #
-# `swagger: "2.0"` deliberately does NOT match -- the root table is 3.x-shaped.
+# `swagger: "2.0"` deliberately does not match -- the root table is 3.x-shaped.
 swagger: "2.0"
 paths:
   /p:

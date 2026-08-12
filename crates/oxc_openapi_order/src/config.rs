@@ -12,20 +12,21 @@ use crate::{KeyOrder, Options, PathsOrder};
 /// One `keyOrder` override: a parent key, and the field order to use for it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyOrderEntry {
-    /// The parent key whose table this replaces — `"get"`, `"responses"`, `"root"`, and so on.
+    /// The parent key whose table this replaces: `"get"`, `"responses"`, `"root"`, and so on.
     pub key: String,
     /// The field order. Keys not listed follow the listed ones, compared case-insensitively.
     ///
-    /// EMPTY is a real answer, not an omission: it ranks nothing, so the mapping is ordered
-    /// alphabetically. Leaving the entry out instead keeps the built-in table, or source order.
+    /// An empty list is a real answer rather than an omission: it ranks nothing, so the mapping is
+    /// ordered alphabetically. Leaving the entry out instead keeps the built-in table, or source
+    /// order.
     pub fields: Vec<String>,
 }
 
 /// `sortOpenapi`: whether to order OpenAPI documents, and how.
 ///
-/// [`Default`] is ENABLED with every sub-option at its own default, which is the default pass and
-/// exactly what upstream does with no flags. That is deliberate: the option is on by default, so the
-/// type's default must be the on state or the two would disagree.
+/// [`Default`] is enabled with every sub-option at its own default, which is the default pass and
+/// exactly what upstream does with no flags. The option is on by default, so the type's default has
+/// to be the on state or the two would disagree.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SortOpenapi {
     /// Whether to order at all.
@@ -36,7 +37,7 @@ pub struct SortOpenapi {
     pub components: bool,
     /// Order `properties` mappings under `components.schemas` alphabetically.
     pub properties: bool,
-    /// Field-order overrides, layered OVER the built-in tables.
+    /// Field-order overrides, layered over the built-in tables.
     ///
     /// Naming one table leaves every other one intact. This is a deliberate difference from
     /// upstream's `--sortFile`, which replaces the whole set, so that naming only `get` there

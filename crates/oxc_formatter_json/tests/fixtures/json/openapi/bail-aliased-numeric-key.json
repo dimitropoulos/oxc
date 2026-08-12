@@ -1,20 +1,20 @@
-// BAIL-OUT 4: a numeric key whose printed text is not the property it names.
+// Bail-out 4: a numeric key whose printed text is not the property it names.
 //
-// `1.0` prints as `1.0` but names the property `1`, so `{1.0: .., "1": ..}` is ONE property written
+// `1.0` prints as `1.0` but names the property `1`, so `{1.0: .., "1": ..}` is one property written
 // twice. Ordering by printed text ranks the two spellings differently, which breaks the tie that
 // preserves their relative order and silently flips which one wins -- the formatter changing what the
-// document MEANS. Refusing is the only safe answer, so the key reports no identity at all.
+// document means. Refusing is the only safe answer, so the key reports no identity at all.
 //
 // The test is a round-trip (`String(Number(k)) == k`), not a shape: `/decimal`, `/exponent`, `/hex`
 // and `/separator` are four spellings of the same hazard, and `numeric-keys.json` holds the keys that
-// DO round-trip and are read normally.
+// do round-trip and are read normally.
 //
 // The refusal survives its own output, which is what makes it correct: both key writers quote a
 // numeric key only when it round-trips, so a key refused here is emitted bare and is still a
 // non-round-tripping numeric literal on the next pass. Were it quoted, pass 2 would see an ordinary
 // string key and reorder.
 //
-// `/ordered` has no numeric key and IS reordered, so the refusal is per-object, not per-document.
+// `/ordered` has no numeric key and is reordered, so the refusal is per-object, not per-document.
 {
   "openapi": "3.0.0",
   "paths": {

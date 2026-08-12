@@ -5,7 +5,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 // Every table the default pass can resolve, in one document -- the JSON twin of the YAML backend's
 // `tables.yaml`, and it must produce the same key order.
 //
-// Verified against openapi-format v1.33.6, which agrees on every object here EXCEPT the status codes
+// Verified against openapi-format v1.33.6, which agrees on every object here except the status codes
 // under `responses`: it emits 200 before 404, because they are JavaScript object keys and ECMAScript
 // enumerates integer-like keys in ascending numeric order. That is a property of its representation,
 // not an ordering rule, so we keep source order.
@@ -35,7 +35,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 // Every table the default pass can resolve, in one document -- the JSON twin of the YAML backend's
 // `tables.yaml`, and it must produce the same key order.
 //
-// Verified against openapi-format v1.33.6, which agrees on every object here EXCEPT the status codes
+// Verified against openapi-format v1.33.6, which agrees on every object here except the status codes
 // under `responses`: it emits 200 before 404, because they are JavaScript object keys and ECMAScript
 // enumerates integer-like keys in ascending numeric order. That is a property of its representation,
 // not an ordering rule, so we keep source order.
@@ -71,7 +71,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 // Every table the default pass can resolve, in one document -- the JSON twin of the YAML backend's
 // `tables.yaml`, and it must produce the same key order.
 //
-// Verified against openapi-format v1.33.6, which agrees on every object here EXCEPT the status codes
+// Verified against openapi-format v1.33.6, which agrees on every object here except the status codes
 // under `responses`: it emits 200 before 404, because they are JavaScript object keys and ECMAScript
 // enumerates integer-like keys in ascending numeric order. That is a property of its representation,
 // not an ordering rule, so we keep source order.

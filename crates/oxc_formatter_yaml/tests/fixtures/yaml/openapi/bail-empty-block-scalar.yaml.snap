@@ -2,13 +2,13 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# BAIL-OUT 5, at the edge where the block scalar's BODY IS EMPTY.
+# Bail-out 5, at the edge where the block scalar's body is empty.
 #
 # For a non-empty body the tail after `content_end` begins with that line's own ending, so one blank
 # line reads as two newlines. For an empty body `content_end` already sits past the header's line
-# break, so one blank line reads as ONE. Counting raw newlines therefore refused on the first pass
+# break, so one blank line reads as one. Counting raw newlines therefore refused on the first pass
 # and accepted on the second -- and where the scalar sorted last, the first pass left a blank line at
-# end of file, which this crate documents as impossible. The count is of blank LINES now.
+# end of file, which this crate documents as impossible. The count is of blank lines now.
 ---
 openapi: 3.0.0
 paths:
@@ -28,13 +28,13 @@ paths:
 ------------------
 { printWidth: 80 }
 ------------------
-# BAIL-OUT 5, at the edge where the block scalar's BODY IS EMPTY.
+# Bail-out 5, at the edge where the block scalar's body is empty.
 #
 # For a non-empty body the tail after `content_end` begins with that line's own ending, so one blank
 # line reads as two newlines. For an empty body `content_end` already sits past the header's line
-# break, so one blank line reads as ONE. Counting raw newlines therefore refused on the first pass
+# break, so one blank line reads as one. Counting raw newlines therefore refused on the first pass
 # and accepted on the second -- and where the scalar sorted last, the first pass left a blank line at
-# end of file, which this crate documents as impossible. The count is of blank LINES now.
+# end of file, which this crate documents as impossible. The count is of blank lines now.
 ---
 openapi: 3.0.0
 paths:
@@ -53,13 +53,13 @@ paths:
 -------------------
 { printWidth: 100 }
 -------------------
-# BAIL-OUT 5, at the edge where the block scalar's BODY IS EMPTY.
+# Bail-out 5, at the edge where the block scalar's body is empty.
 #
 # For a non-empty body the tail after `content_end` begins with that line's own ending, so one blank
 # line reads as two newlines. For an empty body `content_end` already sits past the header's line
-# break, so one blank line reads as ONE. Counting raw newlines therefore refused on the first pass
+# break, so one blank line reads as one. Counting raw newlines therefore refused on the first pass
 # and accepted on the second -- and where the scalar sorted last, the first pass left a blank line at
-# end of file, which this crate documents as impossible. The count is of blank LINES now.
+# end of file, which this crate documents as impossible. The count is of blank lines now.
 ---
 openapi: 3.0.0
 paths:

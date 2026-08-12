@@ -1,4 +1,4 @@
-// BAIL-OUT 1, at all three edges.
+// Bail-out 1, at all three edges.
 //
 // Unlike YAML, one `peek` covers the whole object: the braces bound it exactly. On entry the cursor
 // sits just past `{` -- the object's own leading comments are already drained, and each property's

@@ -1,4 +1,4 @@
-# The gate reads the DOCUMENT ROOT only. An `openapi` key nested somewhere below it does not
+# The gate reads the document root only. An `openapi` key nested somewhere below it does not
 # open it, so this file is byte-identical too.
 config:
   openapi: 3.0.0

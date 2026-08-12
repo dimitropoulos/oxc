@@ -1,6 +1,6 @@
 //! Ordering the members of the `paths` mapping.
 //!
-//! Two comparators, both case-SENSITIVE — unlike the key comparator, which lowercases.
+//! Two comparators, both case-sensitive, unlike the key comparator, which lowercases.
 
 use std::cmp::Ordering;
 
@@ -29,14 +29,14 @@ pub const TAG_METHOD_ORDER: [&str; 8] =
 /// Compare two path templates segment by segment.
 ///
 /// The leading `/` produces an empty first segment, which is skipped: comparison starts at
-/// segment 1. A path that runs out of segments sorts FIRST, tested strictly for "no more
-/// segments" rather than for emptiness — the truthy version conflates a missing segment with
+/// segment 1. A path that runs out of segments sorts first, tested strictly for "no more
+/// segments" rather than for emptiness. The truthy version conflates a missing segment with
 /// the empty one a trailing slash produces, which makes the comparator non-antisymmetric for
 /// `/pets` against `/pets/` (both directions would answer "less", so the result would depend
 /// on input order).
 ///
 /// NOTE: because segment 0 is skipped, two paths that differ only in their first segment and
-/// have no others compare EQUAL. That is upstream's behaviour, and it cannot arise for
+/// have no others compare equal. That is upstream's behaviour, and it cannot arise for
 /// well-formed templates, which all begin with `/` and therefore all have an empty segment 0.
 fn cmp_path(left: &str, right: &str) -> Ordering {
     let mut left = left.split('/');

@@ -1,7 +1,7 @@
-# BAIL-OUT 4, at the edge where the PRINTER changes the property the refusal is based on.
+# Bail-out 4, at the edge where the printer changes the property the refusal is based on.
 #
 # The printer chooses the quote style itself: `'z''z'` is re-emitted as `"z'z"`. A refusal that
-# branched on which quote the SOURCE used therefore held on the first pass and not the second, and
+# branched on which quote the source used therefore held on the first pass and not the second, and
 # formatting was not idempotent. One predicate now covers both styles, and a key containing a space
 # is refused too, because `proseWrap` can re-fold a multi-line key onto one line and the folded form
 # differs from the source only by that space.

@@ -3,7 +3,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
 // Keys the table does not name come after the ranked ones, compared case-insensitively, with ties
-// keeping SOURCE order: `Alpha` before `alpha`, `Type` before `type`.
+// keeping source order: `Alpha` before `alpha`, `Type` before `type`.
 //
 // `content`'s table is empty, which is not the same as having no table: an empty table ranks nothing,
 // so every member is ordered case-insensitively.
@@ -31,7 +31,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 { printWidth: 80 }
 ------------------
 // Keys the table does not name come after the ranked ones, compared case-insensitively, with ties
-// keeping SOURCE order: `Alpha` before `alpha`, `Type` before `type`.
+// keeping source order: `Alpha` before `alpha`, `Type` before `type`.
 //
 // `content`'s table is empty, which is not the same as having no table: an empty table ranks nothing,
 // so every member is ordered case-insensitively.
@@ -62,7 +62,7 @@ source: crates/oxc_formatter_json/tests/fixtures/mod.rs
 { printWidth: 100 }
 -------------------
 // Keys the table does not name come after the ranked ones, compared case-insensitively, with ties
-// keeping SOURCE order: `Alpha` before `alpha`, `Type` before `type`.
+// keeping source order: `Alpha` before `alpha`, `Type` before `type`.
 //
 // `content`'s table is empty, which is not the same as having no table: an empty table ranks nothing,
 // so every member is ordered case-insensitively.

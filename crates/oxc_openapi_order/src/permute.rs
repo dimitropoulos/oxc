@@ -43,7 +43,7 @@ pub fn checked_len(len: usize) -> u32 {
 /// Fill `order` with the permutation of `0..len` that `compare` asks for, or leave it alone
 /// and answer `None` when `0..len` is already ordered.
 ///
-/// `compare` must be TRANSITIVE as well as total. The source index as a final tiebreak supplies
+/// `compare` must be transitive as well as total. The source index as a final tiebreak supplies
 /// totality and antisymmetry only; a non-transitive base comparison would satisfy the letter of
 /// that and still break both the early-out below and `sort_unstable_by`, which is permitted to
 /// panic on an inconsistent comparator.
@@ -93,7 +93,7 @@ pub fn permutation<'s>(
     // Split the borrow so the comparison can read `ranks` while `order` is written.
     let Scratch { ranks, order } = scratch;
 
-    // Rank each key ONCE, rather than re-scanning the table inside the comparison.
+    // Rank each key once, rather than re-scanning the table inside the comparison.
     ranks.clear();
     ranks.extend(keys.iter().map(|key| table.rank(key).unwrap_or(UNRANKED)));
     let ranks = &*ranks;
@@ -178,13 +178,13 @@ mod tests {
 
     #[test]
     fn integer_like_keys_are_ordered_as_text_never_numerically() {
-        // The reference enumerates integer-like keys in ascending NUMERIC order before any
+        // The reference enumerates integer-like keys in ascending numeric order before any
         // rule runs, because they are JS object keys and that is ECMAScript object property
-        // order (`OrdinaryOwnPropertyKeys`) -- not an ordering rule. Here they are ordinary
+        // order (`OrdinaryOwnPropertyKeys`), not an ordering rule. Here they are ordinary
         // unranked text, so `10` precedes `2`; the reference would answer ["2", "9", "10"].
         assert_eq!(order(&[], &["10", "9", "2"]), ["10", "2", "9"]);
         // A mapping whose keys are all unranked is still ordered when a table applies at
-        // all; keeping SOURCE order is `resolve` answering `None`, which is tested there
+        // all; keeping source order is `resolve` answering `None`, which is tested there
         // (a `responses` mapping's own status codes are never ordered).
         assert_eq!(
             order(&["description", "headers", "content", "links"], &["404", "200", "default"]),
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn final_sigma_changes_the_resulting_order() {
         // A per-character lowercase mapping puts "\u{391}\u{3c2}a" before "\u{391}\u{3a3}";
-        // JavaScript does not, because "\u{391}\u{3a3}".toLowerCase() ends in the FINAL form
+        // JavaScript does not, because "\u{391}\u{3a3}".toLowerCase() ends in the final form
         // U+03C2, making it a prefix of the other key.
         assert_eq!(
             order(&[], &["\u{391}\u{3c2}a", "\u{3c3}", "A", "\u{391}\u{3a3}"]),

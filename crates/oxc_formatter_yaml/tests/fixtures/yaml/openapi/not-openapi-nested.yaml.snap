@@ -2,7 +2,7 @@
 source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
 ---
 ==================== Input ====================
-# The gate reads the DOCUMENT ROOT only. An `openapi` key nested somewhere below it does not
+# The gate reads the document root only. An `openapi` key nested somewhere below it does not
 # open it, so this file is byte-identical too.
 config:
   openapi: 3.0.0
@@ -17,7 +17,7 @@ config:
 ------------------
 { printWidth: 80 }
 ------------------
-# The gate reads the DOCUMENT ROOT only. An `openapi` key nested somewhere below it does not
+# The gate reads the document root only. An `openapi` key nested somewhere below it does not
 # open it, so this file is byte-identical too.
 config:
   openapi: 3.0.0
@@ -31,7 +31,7 @@ config:
 -------------------
 { printWidth: 100 }
 -------------------
-# The gate reads the DOCUMENT ROOT only. An `openapi` key nested somewhere below it does not
+# The gate reads the document root only. An `openapi` key nested somewhere below it does not
 # open it, so this file is byte-identical too.
 config:
   openapi: 3.0.0

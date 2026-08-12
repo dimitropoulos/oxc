@@ -66,7 +66,7 @@ fn format_both(source: &str, variant: JsonVariant) -> (String, String) {
 }
 
 /// The feature's containment guarantee: a document whose root is not an object with an `openapi`
-/// member formats IDENTICALLY whether the option is on or off.
+/// member formats identically whether the option is on or off.
 ///
 /// Stronger than a fixture, which can only show that the output is stable: this compares the two
 /// option settings against each other, so it fails if the gate ever lets one of these through.
@@ -83,7 +83,7 @@ fn non_openapi_documents_are_untouched() {
         r#""openapi""#,
         "null",
         "{}",
-        // `openapi` as a VALUE, not a key.
+        // `openapi` as a value, not a key.
         r#"{"x":"openapi","paths":{"/p":{"get":{"responses":{},"operationId":"op"}}}}"#,
         // Near-misses on the key name.
         r#"{"openapix":"3.0.0","paths":{"/p":{"get":{"responses":{},"operationId":"op"}}}}"#,

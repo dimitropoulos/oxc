@@ -64,8 +64,8 @@ impl<'a> Format<'a, JsonFormatContext<'a>> for FmtJsonObject<'a, '_> {
             openapi::push_blanks(frame, &spans, f);
         }
 
-        // The last property in SOURCE order. `spans` is indexed through the permutation below, so
-        // taking the last EMITTED property here instead would measure the trailing-comment gap across
+        // The last property in source order. `spans` is indexed through the permutation below, so
+        // taking the last emitted property here instead would measure the trailing-comment gap across
         // the properties in between and invent a blank line.
         let source_last_end = spans.last().expect("non-empty properties").end;
 
