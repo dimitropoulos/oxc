@@ -6,7 +6,7 @@
 //!
 //! `permutations` and `blanks` are watermarked stacks: a mapping appends its [`Frame`], reads it back
 //! by index while printing, and drops it on the way out. That is what lets nested mappings share one
-//! buffer — an inner mapping appends beyond the outer watermark.
+//! buffer, since an inner mapping appends beyond the outer watermark.
 //!
 //! Everything is fed in one item at a time ([`Session::push_key`], [`Session::push_blank`]) rather
 //! than through an iterator, so a backend never has to hold a borrow of this state while calling back
@@ -30,12 +30,12 @@ use crate::{
 pub enum Ordering<'a> {
     /// Rank the pushed keys against a field-order table.
     Table(Table<'a>),
-    /// Compare the pushed keys as PATH TEMPLATES (`sortOpenapi.paths: "path"`).
+    /// Compare the pushed keys as path templates (`sortOpenapi.paths: "path"`).
     Path,
-    /// Compare the pushed strings as TAG KEYS (`sortOpenapi.paths: "tags"`).
+    /// Compare the pushed strings as tag keys (`sortOpenapi.paths: "tags"`).
     ///
     /// The caller pushes each entry's tag key rather than its own key, which is why
-    /// [`Session::push_key`] is documented as "the string the mapping is ordered BY".
+    /// [`Session::push_key`] is documented as "the string the mapping is ordered by".
     Tags,
 }
 
@@ -54,7 +54,7 @@ impl Frame {
         self.len
     }
 
-    /// Whether the frame covers no entries. Never true in practice — a frame exists only for a
+    /// Whether the frame covers no entries. Never true in practice: a frame exists only for a
     /// mapping that needed reordering, which takes at least two entries.
     pub fn is_empty(&self) -> bool {
         self.len == 0
@@ -64,14 +64,14 @@ impl Frame {
 /// Per-run ordering state. See the module docs for the buffer and borrow discipline.
 #[derive(Debug, Default)]
 pub struct Session<'a> {
-    /// Ancestry of the mapping being printed, root first, INCLUDING its own step.
+    /// Ancestry of the mapping being printed, root first, including its own step.
     ancestry: Vec<Step<'a>>,
     /// Keys of the mapping currently being resolved. Live only between the [`Session::push_key`]
     /// run and the [`Session::permute`] that consumes them.
     keys: Vec<&'a str>,
     /// Concatenated permutations, innermost frame last.
     permutations: Vec<u32>,
-    /// Concatenated blank-line snapshots, innermost frame last, indexed by SOURCE position within
+    /// Concatenated blank-line snapshots, innermost frame last, indexed by source position within
     /// the frame.
     blanks: Vec<bool>,
     scratch: Scratch,
@@ -90,7 +90,7 @@ impl<'a> Session<'a> {
     /// Append an ancestry step, returning the depth its [`Session::pop_step`] must be given.
     ///
     /// The backends can only offer a thin borrow adapter around this, since each reaches its session
-    /// through its own formatter, so the balance INVARIANT lives here rather than being restated in
+    /// through its own formatter, so the balance invariant lives here rather than being restated in
     /// each of them: a print site that recursed and leaked a step is caught once, on the way out.
     pub fn push_step(&mut self, step: Step<'a>) -> usize {
         self.ancestry.push(step);
@@ -106,7 +106,8 @@ impl<'a> Session<'a> {
     /// The table that orders the mapping at the current ancestry, or `None` to keep source order.
     ///
     /// An empty ancestry is the document root, which needs the caller's content gate:
-    /// `is_openapi_root` says whether the root has an `openapi` key.
+    /// `is_openapi_root` says whether the root has an `openapi` key. See [`resolve_root`] for how
+    /// that spelling differs from upstream's.
     /// `options` is deliberately independent of the session's own lifetime: `resolve` only reads the
     /// ancestry, so a caller's tables need not outlive the document being printed.
     pub fn table<'o>(&self, options: &Options<'o>, is_openapi_root: bool) -> Option<Table<'o>> {
@@ -122,10 +123,10 @@ impl<'a> Session<'a> {
         is_paths_mapping(&self.ancestry)
     }
 
-    /// Add the next string the mapping is ordered BY, in SOURCE order.
+    /// Add the next string the mapping is ordered by, in source order.
     ///
     /// Usually the entry's key text. Under [`Ordering::Tags`] it is the entry's tag key
-    /// instead, because that ordering does not look at the keys at all — one buffer serves both,
+    /// instead, because that ordering does not look at the keys at all. One buffer serves both,
     /// since a mapping is only ever ordered by one of them.
     pub fn push_key(&mut self, key: &'a str) {
         self.keys.push(key);
@@ -139,7 +140,8 @@ impl<'a> Session<'a> {
     /// purpose-built option is the more specific answer.
     ///
     /// An empty ancestry is the document root, which needs the caller's content gate:
-    /// `is_openapi_root` says whether the root has an `openapi` key.
+    /// `is_openapi_root` says whether the root has an `openapi` key. Pass the value the caller
+    /// actually computed rather than a literal `true`, so a change to the gate reaches here.
     pub fn ordering<'o>(
         &self,
         sort: &'o SortOpenapi,
@@ -185,7 +187,7 @@ impl<'a> Session<'a> {
         frame
     }
 
-    /// Record whether a blank line preceded the next entry, in SOURCE order.
+    /// Record whether a blank line preceded the next entry, in source order.
     pub fn push_blank(&mut self, frame: &Frame, blank: bool) {
         debug_assert!(
             (frame.start..frame.start + frame.len).contains(&self.blanks.len()),
@@ -200,7 +202,7 @@ impl<'a> Session<'a> {
         self.permutations[frame.start + position] as usize
     }
 
-    /// Whether a blank line preceded the entry now at `position`, as measured in SOURCE order
+    /// Whether a blank line preceded the entry now at `position`, as measured in source order
     /// before anything moved. A blank line travels with its entry.
     pub fn blank_before(&self, frame: &Frame, position: usize) -> bool {
         debug_assert_eq!(self.blanks.len(), frame.start + frame.len, "blanks were not filled");
@@ -313,7 +315,7 @@ mod tests {
             ..SortOpenapi::default()
         };
         assert!(matches!(session.ordering(&sort, false), Some(Ordering::Path)));
-        // With no explicit order, that same override IS the answer.
+        // With no explicit order, that same override is the answer.
         let sort = SortOpenapi { paths: PathsOrder::Original, ..sort };
         assert!(matches!(session.ordering(&sort, false), Some(Ordering::Table(_))));
 

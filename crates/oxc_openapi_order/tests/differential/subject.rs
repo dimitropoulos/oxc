@@ -39,7 +39,9 @@ pub fn order(document: &mut Value, options: &Options<'_>, walk: Order) {
     let mut scratch = Scratch::new();
     let mut path: Vec<OwnedStep> = Vec::new();
 
-    // The root's own table needs the content gate the caller owns: a truthy `openapi` member.
+    // The root's own table needs the content gate the caller owns. Upstream's spelling is
+    // JavaScript truthiness of the `openapi` member, so that is what this harness passes; the
+    // formatter backends pass key presence, which the crate docs record as a divergence.
     let has_truthy_openapi = match document {
         Value::Map(entries) => {
             entries.iter().any(|(key, value)| key == "openapi" && value.is_truthy())

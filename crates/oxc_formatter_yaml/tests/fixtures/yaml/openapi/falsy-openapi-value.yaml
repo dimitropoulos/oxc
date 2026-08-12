@@ -1,0 +1,49 @@
+# The content gate reads key presence, never the value.
+#
+# Upstream tests `if (jsonObj.openapi)`, so every value below leaves its document's root unordered
+# there. Here each one is an OpenAPI document and each root is reordered, which is the divergence
+# the crate docs record: a document that names a version field without filling it in is still an
+# OpenAPI document.
+#
+# One document per falsy spelling YAML can produce, since the gate is per document. Each root is
+# written `info` after `paths` so a reordered root is visible in the output.
+---
+openapi: ""
+paths:
+  /p:
+    get:
+      responses: {}
+info:
+  title: empty string
+---
+openapi: 0
+paths:
+  /p:
+    get:
+      responses: {}
+info:
+  title: zero
+---
+openapi: false
+paths:
+  /p:
+    get:
+      responses: {}
+info:
+  title: "false"
+---
+openapi: null
+paths:
+  /p:
+    get:
+      responses: {}
+info:
+  title: "null"
+---
+openapi:
+paths:
+  /p:
+    get:
+      responses: {}
+info:
+  title: bare key with no value

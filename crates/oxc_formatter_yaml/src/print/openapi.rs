@@ -1,7 +1,7 @@
 //! OpenAPI-aware key ordering for block mappings.
 //!
-//! The ordering POLICY lives in `oxc_openapi_order`, which knows no AST. This module is the printer
-//! side: it tracks the ancestry the policy needs, decides when reordering is SAFE, and captures the
+//! The ordering policy lives in `oxc_openapi_order`, which knows no AST. This module is the printer
+//! side: it tracks the ancestry the policy needs, decides when reordering is safe, and captures the
 //! blank-line facts that stop being readable from the source once entries move.
 //!
 //! Everything here is gated on the document's root mapping having an `openapi` key. A document
@@ -25,9 +25,9 @@ use crate::{
 ///
 /// Every buffer lives in `oxc_openapi_order`, shared with the JSON backend, so a mapping's ordering
 /// is set up exactly one way and the watermarked-stack discipline is described in one place. The
-/// anchor/alias index is YAML-only — JSON has neither.
+/// anchor/alias index is YAML-only, since JSON has neither.
 ///
-/// BORROW DISCIPLINE: no borrow of this state is held across a call back into the formatter. Every
+/// Borrow discipline: no borrow of this state is held across a call back into the formatter. Every
 /// read takes a fresh short-lived borrow, so a nested mapping can always take its own. That is why
 /// [`Session`] is fed one item at a time: computing a key's text or a blank-line fact needs the
 /// formatter, and holding a borrow across either would panic the moment anything below it consulted
@@ -51,7 +51,7 @@ pub fn source_index(frame: &Frame, position: usize, f: &YamlFormatter<'_, '_>) -
     f.context().openapi().borrow().session.source_index(frame, position)
 }
 
-/// Whether a blank line preceded the item now at `position`, as measured in SOURCE order before
+/// Whether a blank line preceded the item now at `position`, as measured in source order before
 /// anything moved. A blank line travels with its item.
 pub fn blank_before(frame: &Frame, position: usize, f: &YamlFormatter<'_, '_>) -> bool {
     f.context().openapi().borrow().session.blank_before(frame, position)
@@ -79,7 +79,7 @@ pub fn with_step<'a, R>(
 
 /// The ancestry step for a mapping item's value.
 ///
-/// Prefers the key's RESOLVED text, since that is what the policy's tables are keyed by. Falls back
+/// Prefers the key's resolved text, since that is what the policy's tables are keyed by. Falls back
 /// to the raw source slice for a key that is not a readable scalar (an alias, a collection, a block
 /// scalar, or a quoted scalar carrying escapes); no table name can equal such a slice, because each
 /// of those forms starts with a character no name contains. The one shape this narrows is a key
@@ -98,13 +98,13 @@ pub fn value_step<'a>(item: &MappingItem<'a>, f: &YamlFormatter<'_, 'a>) -> Step
 /// "Readable" means a plain-or-quoted scalar whose value is already a slice of the source: no
 /// allocation, no escape processing.
 ///
-/// Every test here is on a property the printer PRESERVES, which is what makes the refusal survive
+/// Every test here is on a property the printer preserves, which is what makes the refusal survive
 /// its own output. Two earlier versions did not, and the fixture harness's idempotency check caught
 /// both:
 ///
 /// - refusing an explicit `? key`, which the printer normalises to `key:` whenever the key is inline
 ///   and comment-free, so the refusal held on the first pass and not the second;
-/// - branching on WHICH quote the source used, when the printer picks the quote itself: `'z''z'` is
+/// - branching on which quote the source used, when the printer picks the quote itself: `'z''z'` is
 ///   re-emitted as `"z'z"`, so a rule that refused a single-quoted body containing `'` accepted the
 ///   same key on the next pass.
 ///
@@ -176,13 +176,13 @@ fn first_element<'a, 'n>(node: &'n Node<'a>) -> Option<&'n Node<'a>> {
 /// A path item's tag key, for `sortOpenapi.paths: "tags"`.
 ///
 /// The first method in [`TAG_METHOD_ORDER`] present with a non-empty `tags` sequence supplies its
-/// FIRST tag. A path item with no tagged method keys on the empty string, which sorts before every
-/// real tag — that is upstream's behaviour, and it is why the key is a `&str` rather than an
+/// first tag. A path item with no tagged method keys on the empty string, which sorts before every
+/// real tag. That is upstream's behaviour, and it is why the key is a `&str` rather than an
 /// `Option`: "untagged" is a position in the order, not a missing answer.
 ///
 /// An unreadable tag (a multi-line or escaped scalar) reads as untagged rather than refusing the
-/// mapping. Ordering `paths` cannot corrupt a document however the keys come out — only the order of
-/// whole path items changes — so degrading here costs nothing but a surprising position.
+/// mapping. Ordering `paths` moves whole path items and cannot corrupt a document however the keys
+/// come out, so degrading here costs nothing but a surprising position.
 fn tag_key<'a>(item: &MappingItem<'a>, f: &YamlFormatter<'_, 'a>) -> &'a str {
     let Some(path_item) = item.value_content() else { return "" };
     for method in TAG_METHOD_ORDER {
@@ -202,10 +202,10 @@ fn tag_key<'a>(item: &MappingItem<'a>, f: &YamlFormatter<'_, 'a>) -> &'a str {
 /// `%TAG` can bind any handle to `tag:yaml.org,2002:`, and this parser stores directives
 /// uninterpreted, so matching `!!merge` literally misses `!m!merge` under
 /// `%TAG !m! tag:yaml.org,2002:`. That matters: two merge keys have order-dependent precedence, so
-/// failing to recognise one can change the document's merged VALUE, and formatting must never do
+/// failing to recognise one can change the document's merged value, and formatting must never do
 /// that.
 ///
-/// Deliberately wider than real tag resolution — a local `!merge` bound to nothing is refused too,
+/// Deliberately wider than real tag resolution: a local `!merge` bound to nothing is refused too,
 /// which costs nothing.
 fn tag_is_merge(raw: &str) -> bool {
     if raw == "!<tag:yaml.org,2002:merge>" {
@@ -217,10 +217,10 @@ fn tag_is_merge(raw: &str) -> bool {
 
 /// Whether `document`'s root mapping has an `openapi` key.
 ///
-/// The content gate for the whole feature. Deliberately key PRESENCE, not JavaScript truthiness of
+/// The content gate for the whole feature. Deliberately key presence, not JavaScript truthiness of
 /// the value the way the reference tests it: a document with `openapi:` and no version is still an
-/// OpenAPI document, and a formatter should not decide otherwise. `swagger: "2.0"` does not match —
-/// the root table is 3.x-shaped.
+/// OpenAPI document, and a formatter should not decide otherwise. `swagger: "2.0"` does not match,
+/// because the root table is 3.x-shaped. `oxc_openapi_order`'s crate docs record the divergence.
 pub fn document_is_openapi<'a>(document: &Document<'a>, f: &YamlFormatter<'_, 'a>) -> bool {
     let Some(node) = document.body.content.as_deref() else { return false };
     let Content::Mapping(mapping) = &node.content else { return false };
@@ -235,20 +235,22 @@ pub fn document_is_openapi<'a>(document: &Document<'a>, f: &YamlFormatter<'_, 'a
 pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) -> Option<Frame> {
     // Cheapest gates first: the option, the content gate, and mappings with nothing to reorder.
     let sort = &f.options().sort_openapi;
-    if !sort.enabled || !f.context().openapi_document().get() {
+    let is_openapi_root = f.context().openapi_document().get();
+    if !sort.enabled || !is_openapi_root {
         return None;
     }
     if mapping.children.len() < 2 {
         return None;
     }
 
-    // How this mapping is ordered -- a table, or the `paths` sub-option. The policy weighs those
+    // How this mapping is ordered: a table, or the `paths` sub-option. The policy weighs those
     // against each other so both backends cannot disagree.
     //
-    // The content gate above is the `is_openapi_root` it asks for at an empty ancestry.
+    // `is_openapi_root` is the content gate the policy asks for at an empty ancestry, passed
+    // rather than hard-coded so the two spell the gate the same way even if it changes.
     let (ordering, anchors) = {
         let state = f.context().openapi().borrow();
-        (state.session.ordering(sort, true)?, state.anchor_and_alias_starts)
+        (state.session.ordering(sort, is_openapi_root)?, state.anchor_and_alias_starts)
     };
 
     if !may_reorder(mapping, anchors, f) {
@@ -271,7 +273,7 @@ pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) ->
 
     let frame = f.context().openapi().borrow_mut().session.permute(ordering)?;
 
-    // (6) A comment run directly above the mapping, when ordering would put a DIFFERENT entry
+    // (6) A comment run directly above the mapping, when ordering would put a different entry
     // under it.
     //
     // `may_reorder`'s `peek` cannot see this one. A block mapping's `span.start` IS its first entry,
@@ -279,11 +281,11 @@ pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) ->
     // comment is not inside the span, it is immediately before it. Positionally it is the first
     // entry's leading comment, so moving a different entry into first place relocates it across user
     // content -- the `FORMATTER_POLICY.md` invariant (lines 70-79) this whole bail-out exists to
-    // honour. It is reachable through the cursor's CONSUMED side.
+    // honour. It is reachable through the cursor's consumed side.
     //
     // Only the first position matters: an entry swap further down leaves the comment describing the
-    // same entry it always did. `own_line_column` is what separates the two cases -- a comment
-    // trailing the mapping's own key line (`get: # c`) has none, and does not move.
+    // same entry it always did. `own_line_column` separates the two cases: a comment trailing the
+    // mapping's own key line (`get: # c`) has none, and does not move.
     if source_index(&frame, 0, f) != 0 {
         let leads_first_entry = f.context().comments().last_consumed().is_some_and(|comment| {
             comment.own_line_column.is_some()
@@ -300,8 +302,8 @@ pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) ->
         }
     }
 
-    // Snapshot the blank lines in SOURCE order, BEFORE anything moves. `write_item_separator`
-    // measures the gap between two ADJACENT source offsets, which says nothing about two items that
+    // Snapshot the blank lines in source order, before anything moves. `write_item_separator`
+    // measures the gap between two adjacent source offsets, which says nothing about two items that
     // are only adjacent after permuting.
     //
     // One borrow per push, never one held across the loop: `blank_line_between` reads the formatter.
@@ -331,20 +333,20 @@ fn blank_line_between<'a>(
         && classify_gap(f.context().source_text().bytes_range(anchor, upper_bound)) == Gap::Blank
 }
 
-/// THE bail-out. `false` means "keep source order".
+/// The bail-out. `false` means "keep source order".
 ///
 /// Refusing is always safe: the feature degrades to a no-op for that one mapping, and every other
 /// mapping in the document is unaffected. Each branch below is pinned by a fixture under
 /// `tests/fixtures/yaml/openapi/`.
 ///
-/// EVERY branch must survive its own output, or formatting is not idempotent: a condition the
+/// Every branch must survive its own output, or formatting is not idempotent: a condition the
 /// printer erases would refuse on the first pass and reorder on the second. Comments, anchors,
 /// aliases, merge keys and block-scalar chomping are all reproduced verbatim, so they do; an earlier
 /// version of this function also refused an explicit `? key`, which the printer normalises away, and
 /// the fixture harness's idempotency check caught it.
 ///
 /// The comment branch is not an optimisation to be removed later. Comments are placed by a
-/// POSITIONAL, MONOTONIC cursor (`crate::comments`), so moving an entry past another entry would
+/// positional, monotonic cursor (`crate::comments`), so moving an entry past another entry would
 /// emit comments against the wrong nodes or drop them. It is also what keeps this feature inside
 /// `FORMATTER_POLICY.md` "Comment placement invariants" (lines 70-79): a comment must never cross
 /// user content, and must never cross a line boundary. Reordering entries moves user content across
@@ -362,10 +364,10 @@ fn may_reorder<'a>(
     //
     // One `peek` decides it. On entry the cursor sits exactly at the mapping's own start: `write_node`
     // has already drained everything ending at or before it, and no comment inside the span can have
-    // been drained, because such a comment ends after that point. So the first PENDING comment is
+    // been drained, because such a comment ends after that point. So the first pending comment is
     // also the first comment in the span. The scope reaches past `mapping.span.end`, which stops at
     // the last item: a block mapping has no closing token, and `flush_container_end_comments` claims
-    // deeper-indented comments that follow it. The one comment that can be pending from BEFORE the
+    // deeper-indented comments that follow it. The one comment that can be pending from before the
     // span is a held-back suppression marker, which this catches too, since it starts earlier still.
     let scope_end = trivia_scope_end(&source, mapping.span.end);
     if f.context().comments().peek().is_some_and(|comment| comment.span.start < scope_end) {
@@ -373,8 +375,8 @@ fn may_reorder<'a>(
     }
 
     // (2) An anchor or alias inside the span. YAML requires an anchor to precede its alias, so
-    // reordering can emit a file that DOES NOT PARSE. A correctness bug, not a cosmetic one. The
-    // reference never meets it because its JSON round-trip expands aliases.
+    // reordering can emit a file that does not parse: a correctness bug rather than a cosmetic one.
+    // The reference never meets it because its JSON round-trip expands aliases.
     //
     // Byte-scanning for `&` / `*` would be wrong: they are indicators only at token start, and
     // appear constantly inside URLs, globs and prose. Hence the precomputed index.
@@ -391,7 +393,7 @@ fn may_reorder<'a>(
         // changes the merged result.
         //
         // Any key whose text is `<<` is refused, including a quoted one. Strictly, implicit tag
-        // resolution applies to plain scalars only, so `"<<"` is the STRING `<<` and safe to move --
+        // resolution applies to plain scalars only, so `"<<"` is the string `<<` and safe to move,
         // but telling them apart would mean trusting that nothing downstream ever changes the
         // quoting, and refusing a key spelled `<<` costs nothing in a real document.
         if text == "<<" {
@@ -403,16 +405,16 @@ fn may_reorder<'a>(
             return false;
         }
 
-        // (5) A block-scalar tail whose OUTPUT depends on its position.
+        // (5) A block-scalar tail whose output depends on its position.
         //
         // `write_block_scalar` asks `block.span.end >= last_descendant_end` to decide whether it owns
         // its trailing newlines, and `ends_with_keep_chomped_block` asks whether the stream's last
-        // descendant is keep-chomped to decide the file's final newline. Both read SOURCE order, so
+        // descendant is keep-chomped to decide the file's final newline. Both read source order, so
         // neither follows an item to a new position: moving such an item emits a trailing blank line
         // at EOF, or loses the final newline, and re-formatting that output would change it again.
         //
         // This is why the `ItemTail` / block-scalar handoff itself needs no change: it is the
-        // POSITION dependence that is unsafe, and refusing removes it. Conservative on purpose — it
+        // position dependence that is unsafe, and refusing removes it. Conservative on purpose: it
         // refuses whenever any entry carries such a scalar, not only when that entry would move.
         if let Some(block) = item.value_content().and_then(last_descendant_block_scalar) {
             if block.span.end >= f.context().last_descendant_end() {
@@ -422,8 +424,8 @@ fn may_reorder<'a>(
             // A handful of bytes; not worth a bytecount dependency (as in `print/block.rs`).
             #[expect(clippy::naive_bytecount)]
             let trailing_newlines = tail.iter().filter(|byte| **byte == b'\n').count();
-            // Count blank LINES, not raw newlines. For a non-empty body `content_end` sits after the
-            // last content byte, so the first newline is that line's own ending; for an EMPTY body it
+            // Count blank lines, not raw newlines. For a non-empty body `content_end` sits after the
+            // last content byte, so the first newline is that line's own ending; for an empty body it
             // already sits past the header's line break, so every newline in the tail is a blank.
             // The printer normalises a blank run to one, so a raw count is not stable under this
             // branch's own output: an empty body with one blank line counted 2 on the first pass and
@@ -522,7 +524,7 @@ fn collect_node(node: &Node<'_>, into: &mut Vec<u32>) {
     }
 }
 
-/// A mapping item contributes both sides: an anchor can sit on the KEY (`&k key: v`), which a
+/// A mapping item contributes both sides: an anchor can sit on the key (`&k key: v`), which a
 /// value-only walk would miss.
 fn collect_item(item: &MappingItem<'_>, into: &mut Vec<u32>) {
     if let Some(key) = item.key_content() {

@@ -1,16 +1,16 @@
 //! OpenAPI-aware key ordering for JSON objects.
 //!
-//! The ordering POLICY and all the per-run buffers live in `oxc_openapi_order`, shared with the YAML
+//! The ordering policy and all the per-run buffers live in `oxc_openapi_order`, shared with the YAML
 //! backend so ordering is defined exactly once. This module is the JSON printer side: the ancestry the
-//! policy needs, and the decision about when reordering is SAFE.
+//! policy needs, and the decision about when reordering is safe.
 //!
 //! Gated on the root value being an object with an `openapi` member. A document without one is
 //! byte-identical with the feature on.
 //!
-//! Three of YAML's five refusals cannot arise here — JSON has no anchors, no aliases and no merge
-//! keys — and one is JSON-only: a spread property (`...x`), which the lenient parse accepts and whose
-//! position changes what the object evaluates to. The comment refusal applies in full: this crate's
-//! parser accepts comments in the `json`, `jsonc` AND `json5` variants (see
+//! Three of YAML's five refusals cannot arise here, since JSON has no anchors, no aliases and no
+//! merge keys, and one is JSON-only: a spread property (`...x`), which the lenient parse accepts and
+//! whose position changes what the object evaluates to. The comment refusal applies in full: this
+//! crate's parser accepts comments in the `json`, `jsonc` and `json5` variants (see
 //! `parse::validate_comments_for_variant`; only `json-stringify` rejects them), and `json` is the
 //! variant an OpenAPI `.json` file is formatted with.
 
@@ -39,35 +39,35 @@ pub fn with_step<'a, R>(
 /// The ancestry step for an object property's value.
 ///
 /// A property whose key is not readable contributes a step that can match no table name, so the
-/// ancestry stays the right LENGTH and every later absolute index keeps its meaning.
+/// ancestry stays the right length and every later absolute index keeps its meaning.
 pub fn value_step<'a>(property: &ObjectProperty<'a>, f: &JsonFormatter<'_, 'a>) -> Step<'a> {
     Step::Key(key_text(&property.key, f).unwrap_or("\0"))
 }
 
-/// A property key's IDENTITY: the value a consumer sees, not the source spelling.
+/// A property key's identity: the value a consumer sees, not the source spelling.
 ///
 /// `None` means the key has no identity this module can use, and the object must not be reordered.
 ///
-/// Unlike YAML, no unescaping is needed — the parser already cooked it, and `value` is the same
+/// Unlike YAML, no unescaping is needed, because the parser already cooked it, and `value` is the same
 /// `&'a str` for `"openapi"`, `'openapi'` and (in JSON5) a bare `openapi`.
 ///
-/// A NUMERIC key is the delicate one, for two independent reasons.
+/// A numeric key is the delicate one, for two independent reasons.
 ///
-/// It is READ rather than refused, because the printer QUOTES a numeric key it can round-trip:
+/// It is read rather than refused, because the printer quotes a numeric key it can round-trip:
 /// refusing would refuse the first pass and then read `"42"` as an ordinary string key on the second,
-/// and formatting would not be idempotent — the same trap the YAML backend fell into three times.
+/// and formatting would not be idempotent, the same trap the YAML backend fell into three times.
 /// Reading it through the printer's own normaliser is what makes the two passes agree.
 ///
-/// But the printed text is only the key's IDENTITY when it round-trips. `1.0` prints as `1.0` while
-/// naming the property `1`, so `{1.0: x, "1": y}` is ONE property written twice. Ordering by printed
+/// But the printed text is only the key's identity when it round-trips. `1.0` prints as `1.0` while
+/// naming the property `1`, so `{1.0: x, "1": y}` is one property written twice. Ordering by printed
 /// text would rank those two differently, break the tie that preserves their relative order, and
-/// silently flip which one wins — a formatter changing what a document MEANS. So a numeric key that
-/// does not round-trip has no usable identity and the object is refused.
+/// silently flip which one wins, so the formatter would change what the document means. A numeric key
+/// that does not round-trip has no usable identity, and the object is refused.
 ///
 /// That refusal survives its own output, which is what makes it correct: both key writers quote a
 /// numeric key only when `should_quote_numeric_key` holds, and that requires the same round-trip. A
 /// key refused here is therefore emitted bare and is still a non-round-tripping numeric literal on
-/// the next pass. The keys that DO round-trip are exactly those whose printed text equals
+/// the next pass. The keys that do round-trip are exactly those whose printed text equals
 /// `String(Number(..))`, so they cannot alias a differently-spelled sibling, and they read the same
 /// whether they come back quoted (`json`) or bare (`json5`).
 pub fn key_text<'a>(key: &PropertyKey<'a>, f: &JsonFormatter<'_, 'a>) -> Option<&'a str> {
@@ -84,9 +84,10 @@ pub fn key_text<'a>(key: &PropertyKey<'a>, f: &JsonFormatter<'_, 'a>) -> Option<
 
 /// Whether the root object has an `openapi` member.
 ///
-/// The content gate for the whole feature. Key PRESENCE, not the truthiness of the value the way the
+/// The content gate for the whole feature. Key presence, not the truthiness of the value the way the
 /// reference tests it: a document with `"openapi": ""` is still an OpenAPI document, and a formatter
-/// should not decide otherwise. `"swagger": "2.0"` does not match — the root table is 3.x-shaped.
+/// should not decide otherwise. `"swagger": "2.0"` does not match, because the root table is
+/// 3.x-shaped. `oxc_openapi_order`'s crate docs record the divergence.
 ///
 /// Runs before the context exists, so it cannot use [`key_text`]; it does not need to, because only a
 /// string or identifier key can spell `openapi` and neither needs the context to read.
@@ -114,21 +115,22 @@ pub fn begin_object<'a>(
     f: &JsonFormatter<'_, 'a>,
 ) -> Option<oxc_openapi_order::Frame> {
     let sort = &f.options().sort_openapi;
-    if !sort.enabled || !f.context().openapi_document() {
+    let is_openapi_root = f.context().openapi_document();
+    if !sort.enabled || !is_openapi_root {
         return None;
     }
     if object.properties.len() < 2 {
         return None;
     }
 
-    // How this object is ordered -- a table, or the `paths` sub-option. The policy weighs those
+    // How this object is ordered: a table, or the `paths` sub-option. The policy weighs those
     // against each other so both backends cannot disagree.
     //
-    // The root object is the one at an empty ancestry, and `openapi_document` is exactly the gate
-    // it wants for it.
+    // `is_openapi_root` is the content gate the policy asks for at an empty ancestry, passed
+    // rather than hard-coded so the two spell the gate the same way even if it changes.
     let ordering = {
         let session = f.context().openapi().borrow();
-        session.ordering(sort, true)?
+        session.ordering(sort, is_openapi_root)?
     };
 
     if !may_reorder(object, f) {
@@ -159,7 +161,7 @@ pub fn begin_object<'a>(
 ///
 /// The JSON twin of the YAML backend's function of the same name, and it must answer the same for the
 /// same document: the first method in [`TAG_METHOD_ORDER`] present with a non-empty `tags` array
-/// supplies its FIRST tag, and a path item with no tagged method keys on the empty string, which sorts
+/// supplies its first tag, and a path item with no tagged method keys on the empty string, which sorts
 /// before every real tag.
 ///
 /// An unreadable tag reads as untagged rather than refusing the object. Ordering `paths` moves whole
@@ -213,22 +215,22 @@ fn string_value<'a>(expression: &Expression<'a>) -> Option<&'a str> {
     }
 }
 
-/// THE bail-out. `false` means "keep source order".
+/// The bail-out. `false` means "keep source order".
 ///
 /// Refusing is always safe: the feature degrades to a no-op for that one object, and every other
-/// object in the document is unaffected. Each REACHABLE branch is pinned by a fixture under
+/// object in the document is unaffected. Each reachable branch is pinned by a fixture under
 /// `tests/fixtures/json/openapi/`; the spread and unknowable-key branches cannot be, because such a
 /// document does not format at all (`format()` returns `Err`), so no fixture can hold one. They are
 /// defence in depth, kept because a lenient parse is a moving target.
 ///
-/// EVERY branch must survive its own output, or formatting is not idempotent: a condition the printer
+/// Every branch must survive its own output, or formatting is not idempotent: a condition the printer
 /// erases would refuse on the first pass and reorder on the second. Comments are reproduced verbatim
-/// and a spread stays a spread, so both do. (The YAML backend learned this the hard way — three of its
-/// refusals originally branched on properties the printer rewrites.)
+/// and a spread stays a spread, so both do. Three of the YAML backend's refusals originally branched
+/// on properties the printer rewrites, which is how that lesson was learned.
 fn may_reorder<'a>(object: &ObjectExpression<'a>, f: &JsonFormatter<'_, 'a>) -> bool {
     // (1) A comment anywhere inside the object.
     //
-    // Comments are placed by a POSITIONAL, MONOTONIC cursor, so moving a property past another
+    // Comments are placed by a positional, monotonic cursor, so moving a property past another
     // property would emit them against the wrong nodes. It is also what keeps this feature inside
     // `FORMATTER_POLICY.md` "Comment placement invariants" (lines 70-79): a comment must never cross
     // user content, and reordering properties moves user content across a comment. Do not "optimise"
@@ -248,9 +250,9 @@ fn may_reorder<'a>(object: &ObjectExpression<'a>, f: &JsonFormatter<'_, 'a>) -> 
         // evaluate differently, and a spread has no key to order by in any case.
         let ObjectPropertyKind::ObjectProperty(prop) = property else { return false };
 
-        // (3) A key with no usable IDENTITY -- see `key_text` for what that means and why.
+        // (3) A key with no usable identity; see `key_text` for what that means and why.
         //
-        // Note this is about the key's identity, NOT about `computed`. A computed key holding a
+        // This is about the key's identity, not about `computed`. A computed key holding a
         // literal (`{["summary"]: ..}`) reads perfectly well, and the printer drops the brackets, so
         // it is ordered like any other key. What cannot be ordered is a key whose text we cannot
         // know (`{[x]: ..}`, which the printer later reports, making the whole format an `Err`) or
@@ -263,7 +265,7 @@ fn may_reorder<'a>(object: &ObjectExpression<'a>, f: &JsonFormatter<'_, 'a>) -> 
     true
 }
 
-/// Whether a blank line preceded the entry, in SOURCE order.
+/// Whether a blank line preceded the entry, in source order.
 ///
 /// Measured with the same endpoints and the same newline counter the unpermuted separator uses, so the
 /// two paths agree. `count_newlines` is LS/PS-aware, which this crate requires for every variant: the
@@ -276,9 +278,9 @@ fn blank_line_between(prev_end: u32, next_start: u32, f: &JsonFormatter<'_, '_>)
     crate::separated::blank_line_after_comma(between)
 }
 
-/// Push the blank-line snapshot for `object`, in SOURCE order, into `frame`.
+/// Push the blank-line snapshot for `object`, in source order, into `frame`.
 ///
-/// Captured BEFORE anything moves: the unpermuted separator measures the gap between two ADJACENT
+/// Captured before anything moves: the unpermuted separator measures the gap between two adjacent
 /// source offsets, which says nothing about two properties that are only adjacent after permuting.
 pub fn push_blanks(
     frame: &oxc_openapi_order::Frame,

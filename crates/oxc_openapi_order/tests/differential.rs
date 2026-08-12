@@ -8,13 +8,16 @@
 //! - `expected_order` below, an independent stable sort using the transcription's comparator, which
 //!   checks the crate's own output rather than only its agreement with the reference.
 //!
-//! That third check matters more than it looks. Comparing only against the reference lets any bug
-//! that lands inside a documented divergence go unnoticed — index-key order is normalised away by
-//! bucketing, and tie order is unconstrained by definition — so the reference cannot police those
-//! regions. `expected_order` can.
+//! Comparing only against the reference would let any bug that lands inside a documented divergence
+//! go unnoticed: index-key order is normalised away by bucketing, and tie order is unconstrained by
+//! definition, so the reference cannot police those regions. `expected_order` can.
 //!
-//! The reference's known artifacts are CLASSIFIED, not excluded: a divergence is only a failure when
+//! The reference's known artifacts are classified, not excluded: a divergence is only a failure when
 //! it belongs to no known bucket. See [`Bucket`].
+//!
+//! The root content gate here is upstream's, JavaScript truthiness of the `openapi` member, because
+//! the point is to compare against upstream. Both formatter backends pass key presence instead; see
+//! the crate docs for that divergence, which unit tests pin rather than this fuzz.
 //!
 //! Out of scope: `PathsOrder`. `sortPathsBy` defaults to `original`, so ordering the `paths` mapping
 //! is not part of the default pass this test differentiates against. Both path comparators are
@@ -74,9 +77,9 @@ enum Bucket {
     ReferenceBucketedIndexKeys,
     /// D3: the reference dropped a `__proto__` key.
     ReferenceDroppedProtoKey,
-    /// D4: the reference ordered this mapping twice — once from a parent in child role, then again
-    /// from its own table — and its second sort was stable, so keys its own table ties kept the order
-    /// the parent's table gave them. We order once and break ties by source position.
+    /// D4: the reference ordered this mapping twice, once from a parent in child role and then
+    /// again from its own table, and its second sort was stable, so keys its own table ties kept the
+    /// order the parent's table gave them. We order once and break ties by source position.
     TieBrokenByParentTable,
     /// Anything else. One of these is a test failure.
     Unexplained,
@@ -86,7 +89,7 @@ enum Bucket {
 struct Config {
     name: &'static str,
     /// The crate's options.
-    /// Our options in their OWNED form, so this harness exercises the same owned-to-borrowed path
+    /// Our options in their owned form, so this harness exercises the same owned-to-borrowed path
     /// the formatter backends do rather than a shape only a test can build.
     ours: SortOpenapi,
     /// The transcription's options.
@@ -120,8 +123,8 @@ fn configs() -> Vec<Config> {
             name: "components",
             ours: SortOpenapi { components: true, ..SortOpenapi::default() },
             theirs: RefOptions { components: true, properties: false },
-            // `sortComponentsSet` being non-empty ALSO switches on the reference's
-            // `arraySort(node, 'name')` pass, which reorders sequence ELEMENTS by their `name`
+            // `sortComponentsSet` being non-empty also switches on the reference's
+            // `arraySort(node, 'name')` pass, which reorders sequence elements by their `name`
             // member. The crate deliberately never reorders elements, and the transcription does not
             // model that pass, so comparing key orders here would be comparing against an oracle
             // known to be unfaithful. The option's own behaviour is pinned by unit tests measured
@@ -141,7 +144,7 @@ fn configs() -> Vec<Config> {
                 ..SortOpenapi::default()
             },
             theirs: RefOptions::default(),
-            // The reference's `sortSet` REPLACES the whole table set rather than layering over it,
+            // The reference's `sortSet` replaces the whole table set rather than layering over it,
             // so there is no like-for-like comparison.
             compare: false,
             validate_oracle: false,
@@ -279,11 +282,11 @@ fn differential_against_openapi_format() {
     }
 }
 
-/// The order the crate SHOULD produce for `keys` under `table`, derived independently.
+/// The order the crate should produce for `keys` under `table`, derived independently.
 ///
 /// A stable sort using the transcription's comparator. The crate's comparator is the same relation
-/// plus an explicit source-position tiebreak, which is what a stable sort gives for free — so this is
-/// a second implementation of the crate's own specification, not a restatement of it.
+/// plus an explicit source-position tiebreak, which is what a stable sort gives for free, so this is
+/// a second implementation of the crate's own specification rather than a restatement of it.
 fn expected_order<'k>(keys: &[&'k str], table: Option<Table<'_>>) -> Vec<&'k str> {
     let Some(table) = table else { return keys.to_vec() };
     // The oracle comparator models JavaScript and wants a plain slice. Flattening allocates, which
@@ -466,7 +469,7 @@ fn describe(path: &[OwnedStep]) -> String {
 
 /// Which documented divergence explains `their_keys` differing from `our_keys`?
 ///
-/// Each branch is POSITIVE: it reconstructs what the reference would have produced and requires an
+/// Each branch is positive: it reconstructs what the reference would have produced and requires an
 /// exact match. A residual "close enough" test would accept genuine bugs, because every divergence
 /// this test exists to catch has the same shape as one of these.
 fn classify(

@@ -19,7 +19,7 @@ use crate::{
 
 /// The OpenAPI content gate: the root value is an object with an `openapi` member.
 ///
-/// Computed once per run and stored on the context. Deliberately key PRESENCE rather than the
+/// Computed once per run and stored on the context. Deliberately key presence rather than the
 /// truthiness of the value that the reference implementation tests, so `"openapi": ""` still counts.
 fn is_openapi_document(expression: Option<&Expression<'_>>) -> bool {
     matches!(expression, Some(Expression::ObjectExpression(object)) if print::is_openapi_root(object))
