@@ -122,17 +122,20 @@ pub fn parse_sort_openapi(value: &serde_json::Value) -> Option<SortOpenapi> {
                 if let Some(tables) = value.as_object() {
                     sort.key_order = tables
                         .iter()
-                        .map(|(key, fields)| KeyOrderEntry {
-                            key: key.clone(),
-                            fields: fields
-                                .as_array()
-                                .map(|fields| {
-                                    fields
-                                        .iter()
-                                        .filter_map(|field| field.as_str().map(str::to_string))
-                                        .collect()
-                                })
-                                .unwrap_or_default(),
+                        .filter_map(|(key, fields)| {
+                            // A non-array value is dropped rather than defaulted. An empty table
+                            // means "order alphabetically", so treating one as the default would
+                            // turn a typo into a meaningful override instead of ignoring it. An
+                            // explicit `[]` still means alphabetical, which is why this tests the
+                            // value's type rather than whether it yields any fields.
+                            let fields = fields.as_array()?;
+                            Some(KeyOrderEntry {
+                                key: key.clone(),
+                                fields: fields
+                                    .iter()
+                                    .filter_map(|field| field.as_str().map(str::to_string))
+                                    .collect(),
+                            })
                         })
                         .collect();
                 }
