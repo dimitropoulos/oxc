@@ -21,7 +21,7 @@ impl FixtureFormatter for YamlHarness {
 
     fn format(source: &str, _path: &Path, options: &Self::Options) -> String {
         let allocator = Allocator::default();
-        format(&allocator, source, *options)
+        format(&allocator, source, options.clone())
             .expect("format should succeed")
             .print()
             .expect("print should succeed")

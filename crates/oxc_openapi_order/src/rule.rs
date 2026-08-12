@@ -1,9 +1,10 @@
-//! Which table orders a mapping's own entries.
+//! Which         table.map(Table::describe) orders a mapping's own entries.
 //!
 //! One question, asked once per mapping. See the crate docs for why this is not a
 //! transcription of upstream's traversal.
 
-use crate::tables::{self, ALPHABETICAL, CHILD_ROLE_KEYS, ROOT};
+use crate::config::KeyOrderEntry;
+use crate::tables::{self, ALPHABETICAL, CHILD_ROLE_KEYS, ROOT, Table};
 
 /// One step of a mapping's ancestry, from the document root down to and including the
 /// mapping's own step.
@@ -42,27 +43,27 @@ impl Step<'_> {
 /// [`KeyOrder::table`] answers `Some` for all fifteen built-in names no matter what.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct KeyOrder<'a> {
-    overrides: &'a [(&'a str, &'a [&'a str])],
+    overrides: &'a [KeyOrderEntry],
 }
 
 impl<'a> KeyOrder<'a> {
     /// Layer `overrides` over the built-in tables.
-    pub const fn new(overrides: &'a [(&'a str, &'a [&'a str])]) -> Self {
+    pub const fn new(overrides: &'a [KeyOrderEntry]) -> Self {
         Self { overrides }
     }
 
     /// The effective table for `key`, if it has one.
     ///
-    /// `Some(&[])` (an empty table) means "order alphabetically"; `None` means "keep
-    /// source order". They are different answers.
+    /// An EMPTY table means "order alphabetically"; `None` means "keep source order". They are
+    /// different answers.
     ///
     /// A repeated override name resolves to the LAST entry, matching what JSON object parsing
     /// would have produced for the same source.
-    pub fn table(&self, key: &str) -> Option<&'a [&'a str]> {
-        if let Some((_, table)) = self.overrides.iter().rev().find(|(name, _)| *name == key) {
-            return Some(table);
+    pub fn table(&self, key: &str) -> Option<Table<'a>> {
+        if let Some(entry) = self.overrides.iter().rev().find(|entry| entry.key == key) {
+            return Some(Table::User(&entry.fields));
         }
-        tables::builtin(key)
+        tables::builtin(key).map(Table::Builtin)
     }
 }
 
@@ -190,7 +191,7 @@ fn is_skipped_example_element(path: &[Step<'_>]) -> bool {
 /// NOTE: this answers the KEY-order question only. A mapping keyed `paths` is additionally
 /// subject to [`PathsOrder`](crate::PathsOrder), which upstream applies in the mapping's own
 /// visit and therefore AFTER anything here — see [`is_paths_mapping`].
-pub fn resolve<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<&'a [&'a str]> {
+pub fn resolve<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<Table<'a>> {
     let order = &options.key_order;
 
     // Rule 1: this mapping's own key orders it.
@@ -246,7 +247,7 @@ pub fn resolve<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<&'a [&'a 
 /// - `components.schemas.properties` with `properties` on comes out ALPHABETICALLY, not in the
 ///   `schemas` table order: the parent's child-arm write (rule 3) loses, because that arm only
 ///   sorts a node's children and leaves the node's own order as it found it.
-fn alphabetical<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<&'a [&'a str]> {
+fn alphabetical<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<Table<'a>> {
     // `sortComponentsSet`: a direct member of the root `components` mapping.
     //
     // `key_back(path, 0).is_some()` ports `sortComponentsSet.includes(this.key)`: a component
@@ -259,7 +260,7 @@ fn alphabetical<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<&'a [&'a
         && key_at(path, 0) == Some("components")
         && key_back(path, 1) == Some("components")
     {
-        return Some(ALPHABETICAL);
+        return Some(Table::Builtin(ALPHABETICAL));
     }
 
     // `sortComponentsProps`: any `properties` mapping under `components.schemas`, at any
@@ -269,7 +270,7 @@ fn alphabetical<'a>(options: &Options<'a>, path: &[Step<'_>]) -> Option<&'a [&'a
         && key_at(path, 0) == Some("components")
         && key_at(path, 1) == Some("schemas")
     {
-        return Some(ALPHABETICAL);
+        return Some(Table::Builtin(ALPHABETICAL));
     }
 
     None
@@ -301,7 +302,7 @@ pub fn is_paths_mapping(path: &[Step<'_>]) -> bool {
 pub fn resolve_root<'a>(
     options: &Options<'a>,
     has_truthy_openapi_member: bool,
-) -> Option<&'a [&'a str]> {
+) -> Option<Table<'a>> {
     if !has_truthy_openapi_member {
         return None;
     }
@@ -310,7 +311,30 @@ pub fn resolve_root<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{KeyOrder, Options, Step, is_paths_mapping, resolve, resolve_root};
+    use super::{KeyOrder, Options, Step, Table, is_paths_mapping, resolve, resolve_root};
+    use crate::config::KeyOrderEntry;
+
+    /// `keyOrder` overrides from a terser literal form.
+    fn overrides(entries: &[(&str, &[&str])]) -> Vec<KeyOrderEntry> {
+        entries
+            .iter()
+            .map(|(key, fields)| KeyOrderEntry {
+                key: (*key).to_string(),
+                fields: fields.iter().map(|field| (*field).to_string()).collect(),
+            })
+            .collect()
+    }
+
+    /// The table `resolve` picked, named by its first entry.
+    fn described(table: Option<Table<'_>>) -> Option<&str> {
+        table.map(Table::describe)
+    }
+
+    /// The built-in table `name`, named the same way [`described`] names one, so an assertion can say
+    /// "this resolved to the `responses` table" without reaching into the table itself.
+    fn builtin_table(name: &str) -> Option<&'static str> {
+        crate::tables::builtin(name).map(|table| Table::Builtin(table).describe())
+    }
 
     /// `a.b.c` -> `[Key("a"), Key("b"), Key("c")]`, with `#n` meaning `Index(n)`.
     fn path(spec: &str) -> Vec<Step<'_>> {
@@ -325,12 +349,12 @@ mod tests {
             .collect()
     }
 
-    fn table_for(spec: &str) -> Option<&'static [&'static str]> {
+    fn table_for(spec: &str) -> Option<Table<'static>> {
         resolve(&Options::default(), &path(spec))
     }
 
     fn first_of(spec: &str) -> Option<&'static str> {
-        table_for(spec).map(|table| table.first().copied().unwrap_or("<alphabetical>"))
+        table_for(spec).map(Table::describe)
     }
 
     #[test]
@@ -339,7 +363,10 @@ mod tests {
         assert_eq!(first_of("paths./p.post.requestBody"), Some("description"));
         assert_eq!(first_of("components"), Some("parameters"));
         // An empty table is still a table: `content` orders alphabetically.
-        assert_eq!(table_for("paths./p.get.responses.200.content"), Some(&[][..]));
+        assert_eq!(
+            described(table_for("paths./p.get.responses.200.content")),
+            Some("<alphabetical>")
+        );
     }
 
     #[test]
@@ -368,8 +395,8 @@ mod tests {
         // `properties` mapping's own entries take the RESPONSE table.
         assert_eq!(first_of("paths./p.get.responses.properties"), Some("description"));
         assert_eq!(
-            table_for("paths./p.get.responses.properties"),
-            crate::tables::builtin("responses")
+            described(table_for("paths./p.get.responses.properties")),
+            builtin_table("responses")
         );
         // And a status-code mapping is ordered by the response table too.
         assert_eq!(first_of("paths./p.get.responses.200"), Some("description"));
@@ -397,7 +424,7 @@ mod tests {
         // Rule 1 cannot fire for an index step, so rule 2 reproduces this for free.
         // Measured: `components: {schemas: [{format, description, type, zz}]}` yields
         // [description, type, format, zz] for the element.
-        assert_eq!(table_for("components.schemas.#0"), crate::tables::builtin("schemas"));
+        assert_eq!(described(table_for("components.schemas.#0")), builtin_table("schemas"));
         assert_eq!(first_of("components.schemas.#0"), Some("description"));
     }
 
@@ -414,8 +441,8 @@ mod tests {
         // which yields [description, example, type] -- alphabetical, i.e. rule 1.
         // The `properties` table would have given [description, type, example].
         assert_eq!(
-            table_for("components.schemas.S.properties.content"),
-            Some(&[][..]),
+            described(table_for("components.schemas.S.properties.content")),
+            Some("<alphabetical>"),
             "rule 1 must win: the reference is pre-order"
         );
     }
@@ -481,7 +508,7 @@ mod tests {
     fn root_is_never_resolved_by_the_general_rule() {
         assert_eq!(table_for(""), None);
         assert_eq!(resolve_root(&Options::default(), false), None);
-        assert_eq!(resolve_root(&Options::default(), true).map(|table| table[0]), Some("openapi"));
+        assert_eq!(resolve_root(&Options::default(), true).map(Table::describe), Some("openapi"));
     }
 
     #[test]
@@ -492,23 +519,38 @@ mod tests {
 
     #[test]
     fn key_order_overrides_replace_one_table_and_leave_the_rest() {
-        const OVERRIDE: &[(&str, &[&str])] = &[("get", &["summary", "operationId"])];
-        let options = Options { key_order: KeyOrder::new(OVERRIDE), ..Options::default() };
-        assert_eq!(resolve(&options, &path("paths./p.get")).map(|t| t[0]), Some("summary"));
+        let over = overrides(&[("get", &["summary", "operationId"])]);
+        let options = Options { key_order: KeyOrder::new(&over), ..Options::default() };
+        assert_eq!(resolve(&options, &path("paths./p.get")).map(Table::describe), Some("summary"));
         // Untouched tables still resolve.
-        assert_eq!(resolve(&options, &path("paths./p.post")).map(|t| t[0]), Some("operationId"));
-        assert_eq!(resolve(&options, &path("x.requestBody")).map(|t| t[0]), Some("description"));
+        assert_eq!(
+            resolve(&options, &path("paths./p.post")).map(Table::describe),
+            Some("operationId")
+        );
+        assert_eq!(
+            resolve(&options, &path("x.requestBody")).map(Table::describe),
+            Some("description")
+        );
     }
 
     #[test]
     fn components_option_orders_component_types_alphabetically() {
         let options = Options { components: true, ..Options::default() };
         // `components.schemas` is in child role, so no table applies -> alphabetical.
-        assert_eq!(resolve(&options, &path("components.schemas")), Some(&[][..]));
-        assert_eq!(resolve(&options, &path("components.responses")), Some(&[][..]));
+        assert_eq!(
+            described(resolve(&options, &path("components.schemas"))),
+            Some("<alphabetical>")
+        );
+        assert_eq!(
+            described(resolve(&options, &path("components.responses"))),
+            Some("<alphabetical>")
+        );
         // But a component type whose key HAS a table keeps the table (rule 1 wins).
         // Verified against the reference, which yields [name, in, schema, aaa, zzz].
-        assert_eq!(resolve(&options, &path("components.parameters")).map(|t| t[0]), Some("name"));
+        assert_eq!(
+            resolve(&options, &path("components.parameters")).map(Table::describe),
+            Some("name")
+        );
         // Off by default.
         assert_eq!(table_for("components.schemas"), None);
         // Only a DIRECT member of the root `components` mapping.
@@ -531,18 +573,24 @@ mod tests {
         // We take the table reading: an index is not a member name, and a `components` sequence is
         // not expressible in OpenAPI anyway.
         let options = Options { components: true, ..Options::default() };
-        assert_eq!(resolve(&options, &path("components.#0")), crate::tables::builtin("components"));
-        assert_ne!(resolve(&options, &path("components.#0")), Some(&[][..]));
+        assert_eq!(
+            described(resolve(&options, &path("components.#0"))),
+            builtin_table("components")
+        );
+        assert_ne!(described(resolve(&options, &path("components.#0"))), Some("<alphabetical>"));
     }
 
     #[test]
     fn properties_option_orders_component_schema_properties() {
         let options = Options { properties: true, ..Options::default() };
-        assert_eq!(resolve(&options, &path("components.schemas.Pet.properties")), Some(&[][..]));
+        assert_eq!(
+            described(resolve(&options, &path("components.schemas.Pet.properties"))),
+            Some("<alphabetical>")
+        );
         // Any depth, per upstream's key + absolute-index test.
         assert_eq!(
-            resolve(&options, &path("components.schemas.Pet.properties.a.properties")),
-            Some(&[][..])
+            described(resolve(&options, &path("components.schemas.Pet.properties.a.properties"))),
+            Some("<alphabetical>")
         );
         // Outside `components.schemas`, untouched.
         assert_eq!(resolve(&options, &path("paths./p.get.properties")), None);
@@ -562,17 +610,20 @@ mod tests {
         // which yields [aa, description, type, zz] -- alphabetical. With the option off the
         // same document yields [description, type, aa, zz] -- the schemas table.
         let options = Options { properties: true, ..Options::default() };
-        assert_eq!(resolve(&options, &path("components.schemas.properties")), Some(&[][..]));
         assert_eq!(
-            resolve(&options, &path("components.schemas.S.responses.properties")),
-            Some(&[][..])
+            described(resolve(&options, &path("components.schemas.properties"))),
+            Some("<alphabetical>")
+        );
+        assert_eq!(
+            described(resolve(&options, &path("components.schemas.S.responses.properties"))),
+            Some("<alphabetical>")
         );
         // With the option off, rule 4 applies again.
-        assert_eq!(table_for("components.schemas.properties"), crate::tables::builtin("schemas"));
+        assert_eq!(described(table_for("components.schemas.properties")), builtin_table("schemas"));
         // Rule 1 still beats the alphabetical pass: `components.parameters` keeps its table.
         let options = Options { components: true, ..Options::default() };
         assert_eq!(
-            resolve(&options, &path("components.parameters")).map(|table| table[0]),
+            resolve(&options, &path("components.parameters")).map(Table::describe),
             Some("name")
         );
     }
@@ -589,8 +640,8 @@ mod tests {
 
     #[test]
     fn a_repeated_override_name_resolves_to_the_last() {
-        const OVERRIDE: &[(&str, &[&str])] = &[("get", &["first"]), ("get", &["last"])];
-        let options = Options { key_order: KeyOrder::new(OVERRIDE), ..Options::default() };
-        assert_eq!(resolve(&options, &path("x.get")), Some(&["last"][..]));
+        let over = overrides(&[("get", &["first"]), ("get", &["last"])]);
+        let options = Options { key_order: KeyOrder::new(&over), ..Options::default() };
+        assert_eq!(described(resolve(&options, &path("x.get"))), Some("last"));
     }
 }

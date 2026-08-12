@@ -1,0 +1,40 @@
+# `sortOpenapi.paths: "path"` orders the `paths` mapping by path template, segment by segment.
+#
+# Off by default (`"original"`), and it is the ONLY thing that orders this mapping: no built-in table
+# names `paths`, so with the default the paths below stay exactly as written.
+#
+# Segment by segment, not as flat text: `/pets` precedes `/pets/{id}` because it runs out of segments
+# first, and `/pets/{id}` precedes `/petstore` because `pets` < `petstore` at segment 1 — a flat
+# string compare would answer `/pets`, `/pets/{id}`, `/petstore` too, so `/pets-x` is here to tell
+# them apart. Flat text puts `/pets-x` before `/pets/{id}` (`-` < `/`); by segment, `pets-x` is one
+# segment that sorts after `pets`, so `/pets/{id}` comes first.
+#
+# Case is SENSITIVE here, unlike the key comparator: `/Zebra` precedes `/albums`.
+#
+# The operations inside are still ordered by their tables, so the two mechanisms compose.
+openapi: 3.0.0
+paths:
+  /pets/{id}:
+    get:
+      responses: {}
+      operationId: getPet
+  /petstore:
+    get:
+      responses: {}
+      operationId: store
+  /pets-x:
+    get:
+      responses: {}
+      operationId: x
+  /pets:
+    get:
+      responses: {}
+      operationId: listPets
+  /albums:
+    get:
+      responses: {}
+      operationId: albums
+  /Zebra:
+    get:
+      responses: {}
+      operationId: zebra

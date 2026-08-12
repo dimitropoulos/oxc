@@ -7,7 +7,7 @@
 //! Everything here is gated on the document's root mapping having an `openapi` key. A document
 //! without one is byte-identical with the feature on.
 
-use oxc_openapi_order::{Frame, Options, Session, Step};
+use oxc_openapi_order::{Frame, Ordering, Session, Step, TAG_METHOD_ORDER};
 use oxc_yaml_parser::ast::{
     Chomping, Content, Document, FlowSequenceEntry, Mapping, MappingItem, Node, Root,
 };
@@ -114,12 +114,23 @@ pub fn value_step<'a>(item: &MappingItem<'a>, f: &YamlFormatter<'_, 'a>) -> Step
 /// backslash or a line break, so the only cost is declining to reorder a mapping that has such a key
 /// at all.
 fn resolved_key_text<'a>(key: &Node<'a>, f: &YamlFormatter<'_, 'a>) -> Option<&'a str> {
+    let text = scalar_text(key, f)?;
+    // A key with a space in it is refused, which no table name has anyway.
+    (!text.contains(' ')).then_some(text)
+}
+
+/// The resolved text of a single-line scalar, without unescaping.
+///
+/// Refuses anything that would need real scalar resolution: a multi-line scalar, and a quoted one
+/// carrying an escape or an embedded quote. Every caller treats `None` as "cannot read this cheaply"
+/// and degrades safely, so widening it is never required for correctness.
+fn scalar_text<'a>(node: &Node<'a>, f: &YamlFormatter<'_, 'a>) -> Option<&'a str> {
     let source = f.context().source_text();
-    let raw = source.text_for(&to_span(key.content.span()));
-    if raw.contains(['\n', ' ']) {
+    let raw = source.text_for(&to_span(node.content.span()));
+    if raw.contains('\n') {
         return None;
     }
-    match &key.content {
+    match &node.content {
         Content::Plain(_) => Some(raw),
         Content::QuoteSingle(_) | Content::QuoteDouble(_) => {
             let inner = raw.get(1..raw.len().checked_sub(1)?)?;
@@ -127,6 +138,63 @@ fn resolved_key_text<'a>(key: &Node<'a>, f: &YamlFormatter<'_, 'a>) -> Option<&'
         }
         _ => None,
     }
+}
+
+/// The value of `name` in `node`, if `node` is a mapping with such an entry.
+///
+/// Reads block and flow mappings alike: `get: {tags: [pet]}` is as valid a path item as the indented
+/// spelling, and the `paths` ordering must not depend on which the author used.
+fn mapping_entry<'a, 'n>(
+    node: &'n Node<'a>,
+    name: &str,
+    f: &YamlFormatter<'_, 'a>,
+) -> Option<&'n Node<'a>> {
+    let children = match &node.content {
+        Content::Mapping(mapping) => &mapping.children,
+        Content::FlowMapping(mapping) => &mapping.children,
+        _ => return None,
+    };
+    children
+        .iter()
+        .find(|item| item.key_content().is_some_and(|key| resolved_key_text(key, f) == Some(name)))?
+        .value_content()
+}
+
+/// The first element of a block or flow sequence.
+fn first_element<'a, 'n>(node: &'n Node<'a>) -> Option<&'n Node<'a>> {
+    match &node.content {
+        Content::Sequence(sequence) => sequence.children.first()?.content.as_deref(),
+        Content::FlowSequence(sequence) => match sequence.children.first()? {
+            FlowSequenceEntry::Item(node) => Some(node),
+            // `[a: b]` is a single-pair mapping, not a scalar, so it names no tag.
+            FlowSequenceEntry::Pair(_) => None,
+        },
+        _ => None,
+    }
+}
+
+/// A path item's tag key, for `sortOpenapi.paths: "tags"`.
+///
+/// The first method in [`TAG_METHOD_ORDER`] present with a non-empty `tags` sequence supplies its
+/// FIRST tag. A path item with no tagged method keys on the empty string, which sorts before every
+/// real tag — that is upstream's behaviour, and it is why the key is a `&str` rather than an
+/// `Option`: "untagged" is a position in the order, not a missing answer.
+///
+/// An unreadable tag (a multi-line or escaped scalar) reads as untagged rather than refusing the
+/// mapping. Ordering `paths` cannot corrupt a document however the keys come out — only the order of
+/// whole path items changes — so degrading here costs nothing but a surprising position.
+fn tag_key<'a>(item: &MappingItem<'a>, f: &YamlFormatter<'_, 'a>) -> &'a str {
+    let Some(path_item) = item.value_content() else { return "" };
+    for method in TAG_METHOD_ORDER {
+        if let Some(operation) = mapping_entry(path_item, method, f)
+            && let Some(tags) = mapping_entry(operation, "tags", f)
+            && let Some(first) = first_element(tags)
+            && let Some(tag) = scalar_text(first, f)
+        {
+            return tag;
+        }
+    }
+    ""
 }
 
 /// Whether a tag denotes YAML's merge type, whatever handle it was written with.
@@ -166,21 +234,21 @@ pub fn document_is_openapi<'a>(document: &Document<'a>, f: &YamlFormatter<'_, 'a
 /// The caller must pair a `Some` result with [`finish`].
 pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) -> Option<Frame> {
     // Cheapest gates first: the option, the content gate, and mappings with nothing to reorder.
-    if !f.options().sort_openapi.value() || !f.context().openapi_document().get() {
+    let sort = &f.options().sort_openapi;
+    if !sort.enabled || !f.context().openapi_document().get() {
         return None;
     }
     if mapping.children.len() < 2 {
         return None;
     }
 
-    // Commit 5 plumbs the `paths` / `components` / `properties` / `keyOrder` sub-options through
-    // here; the built-in tables alone are the reference's default pass.
-    let options = Options::default();
-
-    // The content gate above is the `is_openapi_root` the policy asks for at an empty ancestry.
-    let (table, anchors) = {
+    // How this mapping is ordered -- a table, or the `paths` sub-option. The policy weighs those
+    // against each other so both backends cannot disagree.
+    //
+    // The content gate above is the `is_openapi_root` it asks for at an empty ancestry.
+    let (ordering, anchors) = {
         let state = f.context().openapi().borrow();
-        (state.session.table(&options, true)?, state.anchor_and_alias_starts)
+        (state.session.ordering(sort, true)?, state.anchor_and_alias_starts)
     };
 
     if !may_reorder(mapping, anchors, f) {
@@ -190,11 +258,18 @@ pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) ->
     for item in &mapping.children {
         // `may_reorder` already established every key is readable.
         let key = item.key_content().expect("checked by `may_reorder`");
-        let text = resolved_key_text(key, f).expect("checked by `may_reorder`");
+        let text = match ordering {
+            // Ordering by tag does not look at the keys at all: each entry contributes the tag key
+            // of its path item instead.
+            Ordering::Tags => tag_key(item, f),
+            Ordering::Path | Ordering::Table(_) => {
+                resolved_key_text(key, f).expect("checked by `may_reorder`")
+            }
+        };
         f.context().openapi().borrow_mut().session.push_key(text);
     }
 
-    let frame = f.context().openapi().borrow_mut().session.permute(table)?;
+    let frame = f.context().openapi().borrow_mut().session.permute(ordering)?;
 
     // (6) A comment run directly above the mapping, when ordering would put a DIFFERENT entry
     // under it.

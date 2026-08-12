@@ -15,9 +15,29 @@
 
 use crate::{
     Options, Step,
+    config::SortOpenapi,
+    paths::{PathsOrder, order_by_path, order_by_tags},
     permute::{Scratch, permutation},
-    rule::{resolve, resolve_root},
+    rule::{is_paths_mapping, resolve, resolve_root},
+    tables::Table,
 };
+
+/// How one mapping's entries are ordered.
+///
+/// Chosen by [`Session::ordering`] and consumed by [`Session::permute`], so a backend never decides
+/// this for itself.
+#[derive(Debug, Clone, Copy)]
+pub enum Ordering<'a> {
+    /// Rank the pushed keys against a field-order table.
+    Table(Table<'a>),
+    /// Compare the pushed keys as PATH TEMPLATES (`sortOpenapi.paths: "path"`).
+    Path,
+    /// Compare the pushed strings as TAG KEYS (`sortOpenapi.paths: "tags"`).
+    ///
+    /// The caller pushes each entry's tag key rather than its own key, which is why
+    /// [`Session::push_key`] is documented as "the string the mapping is ordered BY".
+    Tags,
+}
 
 /// One mapping's ordering, as a window into the run's shared stacks.
 ///
@@ -89,25 +109,73 @@ impl<'a> Session<'a> {
     /// `is_openapi_root` says whether the root has an `openapi` key.
     /// `options` is deliberately independent of the session's own lifetime: `resolve` only reads the
     /// ancestry, so a caller's tables need not outlive the document being printed.
-    pub fn table<'o>(&self, options: &Options<'o>, is_openapi_root: bool) -> Option<&'o [&'o str]> {
+    pub fn table<'o>(&self, options: &Options<'o>, is_openapi_root: bool) -> Option<Table<'o>> {
         if self.ancestry.is_empty() {
             return resolve_root(options, is_openapi_root);
         }
         resolve(options, &self.ancestry)
     }
 
-    /// Add the next key of the mapping being resolved, in SOURCE order.
+    /// Whether the mapping at the current ancestry is the `paths` mapping, and so is ordered by the
+    /// `paths` sub-option rather than by a table.
+    pub fn is_paths_mapping(&self) -> bool {
+        is_paths_mapping(&self.ancestry)
+    }
+
+    /// Add the next string the mapping is ordered BY, in SOURCE order.
+    ///
+    /// Usually the entry's key text. Under [`Ordering::Tags`] it is the entry's tag key
+    /// instead, because that ordering does not look at the keys at all — one buffer serves both,
+    /// since a mapping is only ever ordered by one of them.
     pub fn push_key(&mut self, key: &'a str) {
         self.keys.push(key);
     }
 
-    /// Consume the pushed keys and open a frame, or answer `None` when they are already ordered.
+    /// How the mapping at the current ancestry is ordered, or `None` to keep source order.
     ///
-    /// The keys are cleared either way. On `Some`, the caller must push exactly [`Frame::len`]
+    /// The one place the `paths` sub-option is weighed against the tables, so both backends cannot
+    /// disagree about it. An explicit `paths` order wins for the `paths` mapping: no built-in table
+    /// names `paths`, so the two can only meet when a `keyOrder` override names it too, and then the
+    /// purpose-built option is the more specific answer.
+    ///
+    /// An empty ancestry is the document root, which needs the caller's content gate:
+    /// `is_openapi_root` says whether the root has an `openapi` key.
+    pub fn ordering<'o>(
+        &self,
+        sort: &'o SortOpenapi,
+        is_openapi_root: bool,
+    ) -> Option<Ordering<'o>> {
+        if self.is_paths_mapping() {
+            match sort.paths {
+                PathsOrder::Path => return Some(Ordering::Path),
+                PathsOrder::Tags => return Some(Ordering::Tags),
+                PathsOrder::Original => {}
+            }
+        }
+        self.table(&sort.options(), is_openapi_root).map(Ordering::Table)
+    }
+
+    /// Consume the pushed strings and open a frame, or `None` when they are already ordered.
+    ///
+    /// The buffer is cleared either way. On `Some`, the caller must push exactly [`Frame::len`]
     /// blank-line flags with [`Session::push_blank`] before reading the frame back.
-    pub fn permute(&mut self, table: &[&str]) -> Option<Frame> {
+    pub fn permute(&mut self, ordering: Ordering<'_>) -> Option<Frame> {
+        match ordering {
+            Ordering::Table(table) => {
+                self.permute_with(|keys, scratch| permutation(table, keys, scratch))
+            }
+            Ordering::Path => self.permute_with(order_by_path),
+            Ordering::Tags => self.permute_with(order_by_tags),
+        }
+    }
+
+    /// Shared frame bookkeeping: whichever comparator ran, the frame is opened the same way.
+    fn permute_with(
+        &mut self,
+        order: impl for<'s> FnOnce(&[&str], &'s mut Scratch) -> Option<&'s [u32]>,
+    ) -> Option<Frame> {
         let Self { keys, scratch, permutations, blanks, .. } = self;
-        let frame = permutation(table, keys, scratch).map(|order| {
+        let frame = order(keys, scratch).map(|order| {
             let start = permutations.len();
             debug_assert_eq!(blanks.len(), start, "a previous frame was not ended");
             permutations.extend_from_slice(order);
@@ -153,8 +221,8 @@ impl<'a> Session<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::Session;
-    use crate::{Options, Step};
+    use super::{Ordering, Session};
+    use crate::{KeyOrderEntry, Options, PathsOrder, SortOpenapi, Step, tables::Table};
 
     #[test]
     fn frames_nest_and_unwind() {
@@ -162,7 +230,14 @@ mod tests {
         for key in ["responses", "links", "description"] {
             session.push_key(key);
         }
-        let outer = session.permute(&["description", "headers", "content", "links"]).unwrap();
+        let outer = session
+            .permute(Ordering::Table(Table::Builtin(&[
+                "description",
+                "headers",
+                "content",
+                "links",
+            ])))
+            .unwrap();
         assert_eq!(outer.len(), 3);
         for blank in [false, false, true] {
             session.push_blank(&outer, blank);
@@ -179,7 +254,7 @@ mod tests {
         for key in ["b", "a"] {
             session.push_key(key);
         }
-        let inner = session.permute(&[]).unwrap();
+        let inner = session.permute(Ordering::Table(Table::Builtin(&[]))).unwrap();
         session.push_blank(&inner, false);
         session.push_blank(&inner, false);
         assert_eq!(session.source_index(&inner, 0), 1);
@@ -196,11 +271,57 @@ mod tests {
         let mut session = Session::new();
         session.push_key("a");
         session.push_key("b");
-        assert!(session.permute(&[]).is_none());
+        assert!(session.permute(Ordering::Table(Table::Builtin(&[]))).is_none());
         // A second call must not see the previous call's keys.
         session.push_key("b");
         session.push_key("a");
-        assert!(session.permute(&[]).is_some());
+        assert!(session.permute(Ordering::Table(Table::Builtin(&[]))).is_some());
+    }
+
+    /// The `paths` sub-option and the tables meet only at the `paths` mapping, and the option wins.
+    #[test]
+    fn the_paths_option_decides_only_the_paths_mapping() {
+        let mut session = Session::new();
+        session.push_step(Step::Key("paths"));
+
+        // No built-in table names `paths`, so the default leaves it in source order.
+        let default = SortOpenapi::default();
+        assert!(matches!(default.paths, PathsOrder::Original));
+        assert!(session.ordering(&default, false).is_none());
+
+        for (order, expected) in
+            [(PathsOrder::Path, "Path"), (PathsOrder::Tags, "Tags"), (PathsOrder::Original, "none")]
+        {
+            let sort = SortOpenapi { paths: order, ..SortOpenapi::default() };
+            let answer = match session.ordering(&sort, false) {
+                Some(Ordering::Path) => "Path",
+                Some(Ordering::Tags) => "Tags",
+                Some(Ordering::Table(_)) => "Table",
+                None => "none",
+            };
+            assert_eq!(answer, expected, "paths: {order:?}");
+        }
+
+        // An explicit order also beats a `keyOrder` override that names `paths`, which is the only
+        // way the two can both apply.
+        let sort = SortOpenapi {
+            paths: PathsOrder::Path,
+            key_order: vec![KeyOrderEntry {
+                key: "paths".to_string(),
+                fields: vec!["/z".to_string()],
+            }],
+            ..SortOpenapi::default()
+        };
+        assert!(matches!(session.ordering(&sort, false), Some(Ordering::Path)));
+        // With no explicit order, that same override IS the answer.
+        let sort = SortOpenapi { paths: PathsOrder::Original, ..sort };
+        assert!(matches!(session.ordering(&sort, false), Some(Ordering::Table(_))));
+
+        // A mapping that is not `paths` is untouched by the option.
+        session.push_step(Step::Key("/p"));
+        session.push_step(Step::Key("get"));
+        let sort = SortOpenapi { paths: PathsOrder::Path, ..SortOpenapi::default() };
+        assert!(matches!(session.ordering(&sort, false), Some(Ordering::Table(_))));
     }
 
     #[test]
@@ -209,13 +330,13 @@ mod tests {
         let mut session = Session::new();
         // Empty ancestry is the root, and needs the caller's content gate.
         assert!(session.table(&options, false).is_none());
-        assert_eq!(session.table(&options, true).map(|table| table[0]), Some("openapi"));
+        assert_eq!(session.table(&options, true).map(Table::describe), Some("openapi"));
 
         session.push_step(Step::Key("paths"));
         session.push_step(Step::Key("/p"));
         let depth = session.push_step(Step::Key("get"));
         // Non-root: the gate is irrelevant, the ancestry decides.
-        assert_eq!(session.table(&options, false).map(|table| table[0]), Some("operationId"));
+        assert_eq!(session.table(&options, false).map(Table::describe), Some("operationId"));
         session.pop_step(depth);
         assert_eq!(session.depth(), 2);
     }

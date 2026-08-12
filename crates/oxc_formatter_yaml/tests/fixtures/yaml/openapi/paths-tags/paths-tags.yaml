@@ -1,0 +1,37 @@
+# `sortOpenapi.paths: "tags"` orders the `paths` mapping by each path item's TAG key.
+#
+# The tag key is the first tag of the first method present in
+# `[get, query, post, put, delete, patch, options, head]` that has a non-empty `tags`, so:
+#
+# `/two-methods` keys on `zebra` from its `post`, NOT `alpha` from its `patch`: `post` comes earlier in
+#   that list than `patch`, and the list order is upstream's, not the source's.
+# `/first-tag-only` keys on `beta`, not `aardvark` — only the FIRST tag counts.
+# `/untagged` and `/no-methods` key on the empty string, which sorts before every real tag, and their
+#   tie keeps SOURCE order, so `/untagged` stays ahead of `/no-methods`.
+# `/flow` is written as a flow collection and must key identically to the indented spelling: the
+#   ordering cannot depend on which the author used. This is the one entry with no counterpart in the
+#   JSON backend's twin of this fixture, because JSON has no flow-versus-block distinction to test.
+#
+# Expected: the two untagged ones, then alpha, beta, zebra.
+openapi: 3.0.0
+paths:
+  /two-methods:
+    patch:
+      tags: [alpha]
+      responses: {}
+    post:
+      tags: [zebra]
+      responses: {}
+  /first-tag-only:
+    get:
+      tags:
+        - beta
+        - aardvark
+      responses: {}
+  /untagged:
+    get:
+      responses: {}
+  /flow:
+    get: { tags: [alpha-flow], responses: {} }
+  /no-methods:
+    description: not an operation

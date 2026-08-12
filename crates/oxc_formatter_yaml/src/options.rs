@@ -7,7 +7,7 @@ use oxc_formatter_core::{
 /// Prettier's `yaml` language consumes the shared layout options plus
 /// `proseWrap`, `singleQuote`, `bracketSpacing`, and `trailingComma`
 /// (`trailingComma` is consumed by the flow-collection printer).
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct YamlFormatOptions {
     /// NOTE: Present to satisfy [`FormatOptions`], but a no-op for output: YAML forbids tab indentation.
     /// The printer's indent char is decided by this field but no indent is ever emitted.
@@ -79,31 +79,14 @@ impl From<bool> for BracketSpacing {
     }
 }
 
-/// Whether block mapping entries are reordered per the OpenAPI key-ordering policy
-/// (`oxc_openapi_order`).
+/// Whether block mapping entries are reordered per the OpenAPI key-ordering policy, and how.
+///
+/// Re-exported from `oxc_openapi_order` rather than restated, so this option means exactly the same
+/// thing here as in the JSON backend and the two sets of defaults cannot drift apart.
 ///
 /// Enabled by default, and content-gated: nothing is reordered unless the document's root mapping
-/// has an `openapi` key. A document without one is byte-identical with this on.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct SortOpenapi(bool);
-
-impl SortOpenapi {
-    pub fn value(self) -> bool {
-        self.0
-    }
-}
-
-impl Default for SortOpenapi {
-    fn default() -> Self {
-        Self(true)
-    }
-}
-
-impl From<bool> for SortOpenapi {
-    fn from(value: bool) -> Self {
-        Self(value)
-    }
-}
+/// has an `openapi` key. A document without one formats identically with this on or off.
+pub use oxc_openapi_order::SortOpenapi;
 
 /// Whether a broken flow collection gets a trailing comma.
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
@@ -117,7 +100,7 @@ pub enum TrailingCommas {
 
 impl YamlFormatOptions {
     /// Whether a trailing comma may follow the last entry of a broken flow collection.
-    pub fn allow_trailing_comma(self) -> bool {
+    pub fn allow_trailing_comma(&self) -> bool {
         matches!(self.trailing_commas, TrailingCommas::Always)
     }
 }

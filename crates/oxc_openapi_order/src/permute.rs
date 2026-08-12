@@ -2,7 +2,8 @@
 
 use std::cmp::Ordering;
 
-use crate::compare::{cmp_lowercase, rank};
+use crate::compare::cmp_lowercase;
+use crate::tables::Table;
 
 /// Sentinel rank for a key the table does not list. Ranked keys always precede unranked
 /// ones, so this must compare greater than every real rank.
@@ -70,7 +71,7 @@ pub fn order_into(
 /// key that belongs at output position `i`.
 ///
 /// Ordering: ranked keys first in table order, then unranked keys compared
-/// case-insensitively, then ties broken by source position. An empty `table` ranks nothing,
+/// case-insensitively, then ties broken by source position. An empty table ranks nothing,
 /// so it orders the whole mapping case-insensitively.
 ///
 /// The already-ordered early-out is what makes `--check` on an already-formatted
@@ -80,7 +81,7 @@ pub fn order_into(
 /// # Panics
 /// Panics if `keys.len()` exceeds `u32::MAX`.
 pub fn permutation<'s>(
-    table: &[&str],
+    table: Table<'_>,
     keys: &[&str],
     scratch: &'s mut Scratch,
 ) -> Option<&'s [u32]> {
@@ -94,7 +95,7 @@ pub fn permutation<'s>(
 
     // Rank each key ONCE, rather than re-scanning the table inside the comparison.
     ranks.clear();
-    ranks.extend(keys.iter().map(|key| rank(table, key).unwrap_or(UNRANKED)));
+    ranks.extend(keys.iter().map(|key| table.rank(key).unwrap_or(UNRANKED)));
     let ranks = &*ranks;
 
     order_into(order, len, |left, right| {
@@ -108,12 +109,12 @@ pub fn permutation<'s>(
 
 #[cfg(test)]
 mod tests {
-    use super::{Scratch, permutation};
+    use super::{Scratch, Table, permutation};
 
     /// The reordered keys, or `None` when no permutation was needed.
     fn apply<'k>(table: &[&str], keys: &[&'k str]) -> Option<Vec<&'k str>> {
         let mut scratch = Scratch::new();
-        let permutation = permutation(table, keys, &mut scratch)?;
+        let permutation = permutation(Table::Builtin(table), keys, &mut scratch)?;
         assert_eq!(permutation.len(), keys.len(), "a permutation covers every key");
         let mut seen = vec![false; keys.len()];
         for &index in permutation {
@@ -222,9 +223,12 @@ mod tests {
     #[test]
     fn scratch_is_reusable_across_mappings() {
         let mut scratch = Scratch::new();
-        assert_eq!(permutation(&[], &["b", "a"], &mut scratch), Some(&[1, 0][..]));
-        assert_eq!(permutation(&[], &["c", "b", "a"], &mut scratch), Some(&[2, 1, 0][..]));
+        assert_eq!(permutation(Table::Builtin(&[]), &["b", "a"], &mut scratch), Some(&[1, 0][..]));
+        assert_eq!(
+            permutation(Table::Builtin(&[]), &["c", "b", "a"], &mut scratch),
+            Some(&[2, 1, 0][..])
+        );
         // A no-op call must not hand back a stale permutation.
-        assert_eq!(permutation(&[], &["a", "b"], &mut scratch), None);
+        assert_eq!(permutation(Table::Builtin(&[]), &["a", "b"], &mut scratch), None);
     }
 }

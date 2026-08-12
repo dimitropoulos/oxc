@@ -71,14 +71,16 @@
 //! [openapi-format]: https://github.com/thim81/openapi-format
 
 mod compare;
+mod config;
 mod paths;
 mod permute;
 mod rule;
 mod session;
 mod tables;
 
+pub use config::{KeyOrderEntry, SortOpenapi};
 pub use paths::{PathsOrder, TAG_METHOD_ORDER, order_by_path, order_by_tags};
 pub use permute::{Scratch, permutation};
 pub use rule::{KeyOrder, Options, Step, is_paths_mapping, resolve, resolve_root};
-pub use session::{Frame, Session};
-pub use tables::ALPHABETICAL;
+pub use session::{Frame, Ordering, Session};
+pub use tables::{ALPHABETICAL, Table};

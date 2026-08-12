@@ -42,6 +42,11 @@ export type ImportSelectorConfig =
   | "import";
 export type SortGroupItemConfig = NewlinesBetweenMarker | string | string[];
 export type SortOrderConfig = "asc" | "desc";
+export type SortOpenapiUserConfig = boolean | SortOpenapiConfig;
+/**
+ * How the entries of the root `paths` mapping are ordered (see `sortOpenapi.paths`).
+ */
+export type PathsOrderConfig = "original" | "path" | "tags";
 export type SortPackageJsonUserConfig = boolean | SortPackageJsonConfig;
 export type SortTailwindcssUserConfig = boolean | SortTailwindcssConfig;
 export type SvelteUserConfig = boolean | SvelteConfig;
@@ -225,6 +230,24 @@ export interface Oxfmtrc {
    * - Default: Disabled
    */
   sortImports?: SortImportsUserConfig;
+  /**
+   * Sort OpenAPI document keys into a canonical order.
+   *
+   * Applies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its
+   * default settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,
+   * `servers`, `paths`, ...) rather than however it was written.
+   * For details, see each field's documentation.
+   *
+   * Content-gated: only documents whose root is a mapping with an `openapi` key are touched, so
+   * any other YAML or JSON file formats identically whether this is on or off.
+   * `swagger: "2.0"` does not match — the key order is OpenAPI 3.x shaped.
+   *
+   * Pass `false` to disable, or an object to configure the sub-options below.
+   *
+   * - Languages: YAML, JSON, JSONC, JSON5
+   * - Default: `true`
+   */
+  sortOpenapi?: SortOpenapiUserConfig;
   /**
    * Sort `package.json` keys.
    *
@@ -548,6 +571,24 @@ export interface FormatConfig {
    */
   sortImports?: SortImportsUserConfig;
   /**
+   * Sort OpenAPI document keys into a canonical order.
+   *
+   * Applies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its
+   * default settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,
+   * `servers`, `paths`, ...) rather than however it was written.
+   * For details, see each field's documentation.
+   *
+   * Content-gated: only documents whose root is a mapping with an `openapi` key are touched, so
+   * any other YAML or JSON file formats identically whether this is on or off.
+   * `swagger: "2.0"` does not match — the key order is OpenAPI 3.x shaped.
+   *
+   * Pass `false` to disable, or an object to configure the sub-options below.
+   *
+   * - Languages: YAML, JSON, JSONC, JSON5
+   * - Default: `true`
+   */
+  sortOpenapi?: SortOpenapiUserConfig;
+  /**
    * Sort `package.json` keys.
    *
    * The algorithm is NOT compatible with [prettier-plugin-sort-packagejson](https://github.com/matzkoh/prettier-plugin-packagejson).
@@ -783,6 +824,61 @@ export interface CustomGroupItemConfig {
  */
 export interface NewlinesBetweenMarker {
   newlinesBetween: boolean;
+  [k: string]: unknown;
+}
+export interface SortOpenapiConfig {
+  /**
+   * Sort the members of every entry of the root `components` mapping alphabetically,
+   * so `components.schemas`, `components.responses` and the rest list their names in order.
+   *
+   * A component type whose own name has a field order keeps it (`components.parameters` stays
+   * `name`, `in`, `schema`, ...); only the unnamed ones fall back to alphabetical.
+   *
+   * - Default: `false`
+   */
+  components?: boolean;
+  /**
+   * Override the field order for individual parent keys, as a map from a key to the order its
+   * mapping's fields should take.
+   *
+   * Merged OVER the built-in orders, so naming one key leaves every other one intact. An empty
+   * array means "order this mapping alphabetically", which is not the same as omitting the key
+   * (which keeps the built-in order). Fields not listed follow the listed ones, compared
+   * case-insensitively.
+   *
+   * Use `"root"` for the document's own top level.
+   *
+   * - Default: `{}`
+   * - Example: `{ "get": ["summary", "operationId", "responses"] }`
+   */
+  keyOrder?: {
+    [k: string]: string[];
+  };
+  /**
+   * How the entries of the root `paths` mapping are ordered.
+   *
+   * - `"original"`: keep the order they were written in
+   * - `"path"`: order by path template, segment by segment, so `/pets` precedes `/pets/{id}`
+   * - `"tags"`: order by each path item's first tag
+   *
+   * With `"tags"`, the tag is taken from the first method the path item defines out of `get`,
+   * `query`, `post`, `put`, `delete`, `patch`, `options`, `head`, and a path item with no tagged
+   * method sorts first.
+   *
+   * Unlike the field order, these compare case-SENSITIVELY.
+   *
+   * - Default: `"original"`
+   */
+  paths?: PathsOrderConfig;
+  /**
+   * Sort the members of `properties` mappings under `components.schemas` alphabetically.
+   *
+   * Scoped to schema definitions: a `properties` mapping elsewhere, such as inside a response
+   * schema, is left alone.
+   *
+   * - Default: `false`
+   */
+  properties?: boolean;
   [k: string]: unknown;
 }
 export interface SortPackageJsonConfig {

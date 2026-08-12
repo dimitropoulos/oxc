@@ -14,8 +14,10 @@
 //! `parse::validate_comments_for_variant`; only `json-stringify` rejects them), and `json` is the
 //! variant an OpenAPI `.json` file is formatted with.
 
-use oxc_ast::ast::{ObjectExpression, ObjectProperty, ObjectPropertyKind, PropertyKey};
-use oxc_openapi_order::{Options, Session, Step};
+use oxc_ast::ast::{
+    ArrayExpression, Expression, ObjectExpression, ObjectProperty, ObjectPropertyKind, PropertyKey,
+};
+use oxc_openapi_order::{Ordering, Session, Step, TAG_METHOD_ORDER};
 
 use crate::print::JsonFormatter;
 
@@ -111,22 +113,22 @@ pub fn begin_object<'a>(
     object: &ObjectExpression<'a>,
     f: &JsonFormatter<'_, 'a>,
 ) -> Option<oxc_openapi_order::Frame> {
-    if !f.options().sort_openapi.value() || !f.context().openapi_document() {
+    let sort = &f.options().sort_openapi;
+    if !sort.enabled || !f.context().openapi_document() {
         return None;
     }
     if object.properties.len() < 2 {
         return None;
     }
 
-    // Commit 5 plumbs the `paths` / `components` / `properties` / `keyOrder` sub-options through
-    // here; the built-in tables alone are the reference's default pass.
-    let options = Options::default();
-
+    // How this object is ordered -- a table, or the `paths` sub-option. The policy weighs those
+    // against each other so both backends cannot disagree.
+    //
     // The root object is the one at an empty ancestry, and `openapi_document` is exactly the gate
-    // `Session::table` wants for it.
-    let table = {
+    // it wants for it.
+    let ordering = {
         let session = f.context().openapi().borrow();
-        session.table(&options, true)?
+        session.ordering(sort, true)?
     };
 
     if !may_reorder(object, f) {
@@ -139,11 +141,76 @@ pub fn begin_object<'a>(
         let ObjectPropertyKind::ObjectProperty(prop) = property else {
             unreachable!("checked by `may_reorder`")
         };
-        let key = key_text(&prop.key, f).expect("checked by `may_reorder`");
+        let key = match ordering {
+            // Ordering by tag does not look at the keys at all: each property contributes the tag key
+            // of its path item instead.
+            Ordering::Tags => tag_key(prop, f),
+            Ordering::Path | Ordering::Table(_) => {
+                key_text(&prop.key, f).expect("checked by `may_reorder`")
+            }
+        };
         f.context().openapi().borrow_mut().push_key(key);
     }
 
-    f.context().openapi().borrow_mut().permute(table)
+    f.context().openapi().borrow_mut().permute(ordering)
+}
+
+/// A path item's tag key, for `sortOpenapi.paths: "tags"`.
+///
+/// The JSON twin of the YAML backend's function of the same name, and it must answer the same for the
+/// same document: the first method in [`TAG_METHOD_ORDER`] present with a non-empty `tags` array
+/// supplies its FIRST tag, and a path item with no tagged method keys on the empty string, which sorts
+/// before every real tag.
+///
+/// An unreadable tag reads as untagged rather than refusing the object. Ordering `paths` moves whole
+/// path items and cannot corrupt the document however the keys come out, so degrading costs nothing
+/// but a surprising position.
+fn tag_key<'a>(property: &ObjectProperty<'a>, f: &JsonFormatter<'_, 'a>) -> &'a str {
+    let Some(path_item) = as_object(&property.value) else { return "" };
+    for method in TAG_METHOD_ORDER {
+        if let Some(operation) = member(path_item, method, f).and_then(as_object)
+            && let Some(tags) = member(operation, "tags", f).and_then(as_array)
+            && let Some(first) = tags.elements.first()
+            && let Some(tag) = first.as_expression().and_then(string_value)
+        {
+            return tag;
+        }
+    }
+    ""
+}
+
+fn as_object<'a, 'e>(expression: &'e Expression<'a>) -> Option<&'e ObjectExpression<'a>> {
+    match expression {
+        Expression::ObjectExpression(object) => Some(object),
+        _ => None,
+    }
+}
+
+fn as_array<'a, 'e>(expression: &'e Expression<'a>) -> Option<&'e ArrayExpression<'a>> {
+    match expression {
+        Expression::ArrayExpression(array) => Some(array),
+        _ => None,
+    }
+}
+
+/// The value of `name` in `object`, if it has such a member.
+fn member<'a, 'o>(
+    object: &'o ObjectExpression<'a>,
+    name: &str,
+    f: &JsonFormatter<'_, 'a>,
+) -> Option<&'o Expression<'a>> {
+    object.properties.iter().find_map(|property| {
+        let ObjectPropertyKind::ObjectProperty(property) = property else { return None };
+        (key_text(&property.key, f) == Some(name)).then_some(&property.value)
+    })
+}
+
+/// A string literal's value, or `None` for anything else.
+fn string_value<'a>(expression: &Expression<'a>) -> Option<&'a str> {
+    match expression {
+        Expression::StringLiteral(literal) => Some(literal.value.as_str()),
+        _ => None,
+    }
 }
 
 /// THE bail-out. `false` means "keep source order".

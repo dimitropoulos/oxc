@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{collections::BTreeMap, path::Path};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -233,6 +233,24 @@ pub struct FormatConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(alias = "experimentalSortImports")]
     pub sort_imports: Option<SortImportsUserConfig>,
+
+    /// Sort OpenAPI document keys into a canonical order.
+    ///
+    /// Applies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its
+    /// default settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,
+    /// `servers`, `paths`, ...) rather than however it was written.
+    /// For details, see each field's documentation.
+    ///
+    /// Content-gated: only documents whose root is a mapping with an `openapi` key are touched, so
+    /// any other YAML or JSON file formats identically whether this is on or off.
+    /// `swagger: "2.0"` does not match — the key order is OpenAPI 3.x shaped.
+    ///
+    /// Pass `false` to disable, or an object to configure the sub-options below.
+    ///
+    /// - Languages: YAML, JSON, JSONC, JSON5
+    /// - Default: `true`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sort_openapi: Option<SortOpenapiUserConfig>,
 
     /// Sort `package.json` keys.
     ///
@@ -697,6 +715,91 @@ pub enum ImportModifierConfig {
     Default,
     Wildcard,
     Named,
+}
+
+// ---
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum SortOpenapiUserConfig {
+    Bool(bool),
+    Object(SortOpenapiConfig),
+}
+
+impl Default for SortOpenapiUserConfig {
+    fn default() -> Self {
+        Self::Bool(true)
+    }
+}
+
+impl SortOpenapiUserConfig {
+    pub fn into_config(self) -> Option<SortOpenapiConfig> {
+        match self {
+            Self::Bool(false) => None,
+            Self::Bool(true) => Some(SortOpenapiConfig::default()),
+            Self::Object(config) => Some(config),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", default)]
+pub struct SortOpenapiConfig {
+    /// How the entries of the root `paths` mapping are ordered.
+    ///
+    /// - `"original"`: keep the order they were written in
+    /// - `"path"`: order by path template, segment by segment, so `/pets` precedes `/pets/{id}`
+    /// - `"tags"`: order by each path item's first tag
+    ///
+    /// With `"tags"`, the tag is taken from the first method the path item defines out of `get`,
+    /// `query`, `post`, `put`, `delete`, `patch`, `options`, `head`, and a path item with no tagged
+    /// method sorts first.
+    ///
+    /// Unlike the field order, these compare case-SENSITIVELY.
+    ///
+    /// - Default: `"original"`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paths: Option<PathsOrderConfig>,
+    /// Sort the members of every entry of the root `components` mapping alphabetically,
+    /// so `components.schemas`, `components.responses` and the rest list their names in order.
+    ///
+    /// A component type whose own name has a field order keeps it (`components.parameters` stays
+    /// `name`, `in`, `schema`, ...); only the unnamed ones fall back to alphabetical.
+    ///
+    /// - Default: `false`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub components: Option<bool>,
+    /// Sort the members of `properties` mappings under `components.schemas` alphabetically.
+    ///
+    /// Scoped to schema definitions: a `properties` mapping elsewhere, such as inside a response
+    /// schema, is left alone.
+    ///
+    /// - Default: `false`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub properties: Option<bool>,
+    /// Override the field order for individual parent keys, as a map from a key to the order its
+    /// mapping's fields should take.
+    ///
+    /// Merged OVER the built-in orders, so naming one key leaves every other one intact. An empty
+    /// array means "order this mapping alphabetically", which is not the same as omitting the key
+    /// (which keeps the built-in order). Fields not listed follow the listed ones, compared
+    /// case-insensitively.
+    ///
+    /// Use `"root"` for the document's own top level.
+    ///
+    /// - Default: `{}`
+    /// - Example: `{ "get": ["summary", "operationId", "responses"] }`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_order: Option<BTreeMap<String, Vec<String>>>,
+}
+
+/// How the entries of the root `paths` mapping are ordered (see `sortOpenapi.paths`).
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum PathsOrderConfig {
+    Original,
+    Path,
+    Tags,
 }
 
 // ---

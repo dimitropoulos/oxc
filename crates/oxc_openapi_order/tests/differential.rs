@@ -45,7 +45,7 @@ mod differential {
 
 use std::{collections::BTreeMap, env, fs, path::Path};
 
-use oxc_openapi_order::{KeyOrder, Options, resolve, resolve_root};
+use oxc_openapi_order::{KeyOrderEntry, Options, SortOpenapi, Table, resolve, resolve_root};
 
 use differential::{
     generate, reference,
@@ -86,7 +86,9 @@ enum Bucket {
 struct Config {
     name: &'static str,
     /// The crate's options.
-    ours: Options<'static>,
+    /// Our options in their OWNED form, so this harness exercises the same owned-to-borrowed path
+    /// the formatter backends do rather than a shape only a test can build.
+    ours: SortOpenapi,
     /// The transcription's options.
     theirs: RefOptions,
     /// Compare key orders against the transcription.
@@ -99,25 +101,24 @@ struct Config {
 }
 
 fn configs() -> Vec<Config> {
-    const OVERRIDE: &[(&str, &[&str])] = &[("get", &["summary", "operationId"])];
     vec![
         Config {
             name: "default",
-            ours: Options::default(),
+            ours: SortOpenapi::default(),
             theirs: RefOptions::default(),
             compare: true,
             validate_oracle: true,
         },
         Config {
             name: "properties",
-            ours: Options { properties: true, ..Options::default() },
+            ours: SortOpenapi { properties: true, ..SortOpenapi::default() },
             theirs: RefOptions { components: false, properties: true },
             compare: true,
             validate_oracle: true,
         },
         Config {
             name: "components",
-            ours: Options { components: true, ..Options::default() },
+            ours: SortOpenapi { components: true, ..SortOpenapi::default() },
             theirs: RefOptions { components: true, properties: false },
             // `sortComponentsSet` being non-empty ALSO switches on the reference's
             // `arraySort(node, 'name')` pass, which reorders sequence ELEMENTS by their `name`
@@ -132,7 +133,13 @@ fn configs() -> Vec<Config> {
         },
         Config {
             name: "keyOrder",
-            ours: Options { key_order: KeyOrder::new(OVERRIDE), ..Options::default() },
+            ours: SortOpenapi {
+                key_order: vec![KeyOrderEntry {
+                    key: "get".to_string(),
+                    fields: vec!["summary".to_string(), "operationId".to_string()],
+                }],
+                ..SortOpenapi::default()
+            },
             theirs: RefOptions::default(),
             // The reference's `sortSet` REPLACES the whole table set rather than layering over it,
             // so there is no like-for-like comparison.
@@ -166,7 +173,8 @@ fn differential_against_openapi_format() {
     let mut override_changed_something = false;
 
     for (index, config) in configs().into_iter().enumerate() {
-        let Config { name, ours: options, theirs: ref_options, compare, validate_oracle } = config;
+        let Config { name, ours, theirs: ref_options, compare, validate_oracle } = config;
+        let options = ours.options();
         // Each configuration gets its own seed range: reusing one range would quadruple the document
         // count while covering the same 1,500 inputs.
         let base = index as u64 * DOCUMENTS_PER_CONFIG;
@@ -276,10 +284,16 @@ fn differential_against_openapi_format() {
 /// A stable sort using the transcription's comparator. The crate's comparator is the same relation
 /// plus an explicit source-position tiebreak, which is what a stable sort gives for free — so this is
 /// a second implementation of the crate's own specification, not a restatement of it.
-fn expected_order<'k>(keys: &[&'k str], table: Option<&[&str]>) -> Vec<&'k str> {
+fn expected_order<'k>(keys: &[&'k str], table: Option<Table<'_>>) -> Vec<&'k str> {
     let Some(table) = table else { return keys.to_vec() };
+    // The oracle comparator models JavaScript and wants a plain slice. Flattening allocates, which
+    // is why the production path does not do it -- here it is the oracle, so cost does not matter.
+    let table: Vec<&str> = match table {
+        Table::Builtin(table) => table.to_vec(),
+        Table::User(table) => table.iter().map(String::as_str).collect(),
+    };
     let mut ordered = keys.to_vec();
-    ordered.sort_by(|left, right| reference::prop_comparator(table, left, right));
+    ordered.sort_by(|left, right| reference::prop_comparator(&table, left, right));
     ordered
 }
 
@@ -424,7 +438,7 @@ fn resolve_for<'o>(
     original: &Value,
     path: &[OwnedStep],
     options: &Options<'o>,
-) -> Option<&'o [&'o str]> {
+) -> Option<Table<'o>> {
     if path.is_empty() {
         let gate = match original {
             Value::Map(entries) => {
@@ -485,7 +499,7 @@ fn classify(
     if let Some(parent) = path.len().checked_sub(1).map(|len| &path[..len])
         && let Some(parent_table) = reference::child_role_table(&to_segs(parent))
     {
-        let first = expected_order(source_keys, Some(parent_table));
+        let first = expected_order(source_keys, Some(Table::Builtin(parent_table)));
         let table = resolve_for(original, path, options);
         if bucketed(&expected_order(&first, table)) == their_keys {
             return Bucket::TieBrokenByParentTable;

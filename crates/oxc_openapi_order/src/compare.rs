@@ -35,21 +35,6 @@ use std::cmp::Ordering;
 /// Greek capital sigma, the one code point whose lowercase mapping depends on context.
 const CAPITAL_SIGMA: char = '\u{3a3}';
 
-/// Rank of `key` within `table`: its position, or `None` when the key is not listed.
-///
-/// Matches upstream's `priorityArr.indexOf(key)`: exact, case-SENSITIVE equality. Ranked
-/// keys always precede unranked ones, so `None` must sort last.
-///
-/// # Panics
-/// Panics if `table` has more entries than `u32::MAX`, which would make a real rank collide
-/// with the "unranked" sentinel.
-pub fn rank(table: &[&str], key: &str) -> Option<u32> {
-    table
-        .iter()
-        .position(|entry| *entry == key)
-        .map(|index| u32::try_from(index).expect("a key-order table cannot have u32::MAX entries"))
-}
-
 /// The UTF-16 code units of `c`, without allocating.
 fn utf16_units(c: char) -> impl Iterator<Item = u16> {
     let mut buf = [0u16; 2];
@@ -97,17 +82,7 @@ pub fn cmp_code_units(a: &str, b: &str) -> Ordering {
 mod tests {
     use std::cmp::Ordering;
 
-    use super::{cmp_code_units, cmp_lowercase, rank};
-
-    #[test]
-    fn rank_is_exact_and_case_sensitive() {
-        let table = ["name", "in", "schema"];
-        assert_eq!(rank(&table, "name"), Some(0));
-        assert_eq!(rank(&table, "schema"), Some(2));
-        assert_eq!(rank(&table, "Name"), None, "table lookup is case-sensitive");
-        assert_eq!(rank(&table, "na"), None, "a strict prefix does not rank");
-        assert_eq!(rank(&[], "name"), None);
-    }
+    use super::{cmp_code_units, cmp_lowercase};
 
     #[test]
     fn ascii_is_case_insensitive() {

@@ -32,7 +32,7 @@ pub enum JsonVariant {
     JsonStringify,
 }
 
-#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct JsonFormatOptions {
     pub indent_style: IndentStyle,
     pub indent_width: IndentWidth,
@@ -142,34 +142,17 @@ impl From<bool> for SingleQuote {
     }
 }
 
-/// Whether object properties are reordered per the OpenAPI key-ordering policy
-/// (`oxc_openapi_order`).
+/// Whether object properties are reordered per the OpenAPI key-ordering policy, and how.
+///
+/// Re-exported from `oxc_openapi_order` rather than restated, so this option means exactly the same
+/// thing here as in the YAML backend and the two sets of defaults cannot drift apart.
 ///
 /// Enabled by default, and content-gated: nothing is reordered unless the root value is an object
-/// with an `openapi` member. A document without one is byte-identical with this on.
+/// with an `openapi` member. A document without one formats identically with this on or off.
 ///
 /// Deliberately not applied to the `json-stringify` variant: it has a separate printer, and its files
 /// (`package.json`, `composer.json`, `.importmap`) are never OpenAPI documents.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct SortOpenapi(bool);
-
-impl SortOpenapi {
-    pub fn value(self) -> bool {
-        self.0
-    }
-}
-
-impl Default for SortOpenapi {
-    fn default() -> Self {
-        Self(true)
-    }
-}
-
-impl From<bool> for SortOpenapi {
-    fn from(value: bool) -> Self {
-        Self(value)
-    }
-}
+pub use oxc_openapi_order::SortOpenapi;
 
 /// Whether to insert spaces around brackets in object.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

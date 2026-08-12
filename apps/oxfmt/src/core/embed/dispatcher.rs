@@ -210,7 +210,7 @@ impl ResolvedDispatchConfig {
     }
 
     pub fn yaml_options(&self) -> YamlFormatOptions {
-        *self.yaml.get_or_init(|| to_oxc_formatter_yaml(&self.config, self.core))
+        self.yaml.get_or_init(|| to_oxc_formatter_yaml(&self.config, self.core)).clone()
     }
 
     pub fn json_options(&self, variant: JsonVariant) -> JsonFormatOptions {
@@ -224,7 +224,7 @@ impl ResolvedDispatchConfig {
                 )
             }
         };
-        *cell.get_or_init(|| to_oxc_formatter_json(&self.config, self.core, variant))
+        cell.get_or_init(|| to_oxc_formatter_json(&self.config, self.core, variant)).clone()
     }
 
     /// Printer options from the shared resolved core bundle;

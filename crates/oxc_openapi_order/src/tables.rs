@@ -55,6 +55,58 @@ pub const TABLES: [(&str, &[&str]); 15] = [
     ("properties", &["description", "type", "items", "format", "example", "default", "enum"]),
 ];
 
+/// A field-order table: the ranked keys for one mapping.
+///
+/// Two representations, because the built-ins are `&'static [&'static str]` while a user's `keyOrder`
+/// arrives as owned strings from a config file. Copying the latter into the former's shape would cost
+/// an allocation per format run to answer a question that needs none: a table is only ever asked for
+/// a key's rank.
+///
+/// An EMPTY table of either kind means "order alphabetically", which is NOT the same as having no
+/// table at all ("keep source order"). That is what makes `keyOrder: { content: [] }` meaningful.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Table<'a> {
+    /// A table of string slices: the built-ins, ported from `defaultSort.json`.
+    Builtin(&'a [&'a str]),
+    /// A `keyOrder` override.
+    User(&'a [String]),
+}
+
+impl Table<'_> {
+    /// The position of `key`, or `None` when this table does not name it.
+    ///
+    /// Case-SENSITIVE and exact: a table names a key or it does not. Case-insensitivity belongs to
+    /// the comparison of UNRANKED keys, which is a different question.
+    ///
+    /// # Panics
+    /// Panics if the table has more than `u32::MAX` entries, which would make a real rank collide
+    /// with the "unranked" sentinel.
+    pub fn rank(&self, key: &str) -> Option<u32> {
+        let position = match self {
+            Self::Builtin(table) => table.iter().position(|entry| *entry == key),
+            Self::User(table) => table.iter().position(|entry| entry == key),
+        };
+        position.map(|index| {
+            u32::try_from(index).expect("a key-order table cannot have u32::MAX entries")
+        })
+    }
+}
+
+#[cfg(test)]
+impl<'a> Table<'a> {
+    /// Which table this is, for tests that need to tell them apart.
+    ///
+    /// Test-only on purpose: nothing in the ordering needs to read a table's contents, only to rank
+    /// against them, and a public accessor would invite code that does.
+    pub(crate) fn describe(self) -> &'a str {
+        match self {
+            Self::Builtin(table) => table.first().copied(),
+            Self::User(table) => table.first().map(String::as_str),
+        }
+        .unwrap_or("<alphabetical>")
+    }
+}
+
 /// The built-in table for `key`, if any.
 pub fn builtin(key: &str) -> Option<&'static [&'static str]> {
     // A linear scan over 15 entries beats hashing, and keeps the crate dependency-free
@@ -64,7 +116,29 @@ pub fn builtin(key: &str) -> Option<&'static [&'static str]> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ALPHABETICAL, CHILD_ROLE_KEYS, TABLES, builtin};
+    use super::{ALPHABETICAL, CHILD_ROLE_KEYS, TABLES, Table, builtin};
+
+    /// Ranking is exact and case-SENSITIVE, matching upstream's `priorityArr.indexOf(key)`.
+    ///
+    /// Asserted over BOTH representations with the same table, because the whole point of the enum is
+    /// that a user's `keyOrder` ranks identically to a built-in — if these two ever disagreed, the
+    /// same document would order differently depending on where its table came from.
+    #[test]
+    fn rank_is_exact_and_case_sensitive_in_both_representations() {
+        let builtin = Table::Builtin(&["name", "in", "schema"]);
+        let owned = vec!["name".to_string(), "in".to_string(), "schema".to_string()];
+        let user = Table::User(&owned);
+        for table in [builtin, user] {
+            assert_eq!(table.rank("name"), Some(0));
+            assert_eq!(table.rank("schema"), Some(2));
+            assert_eq!(table.rank("Name"), None, "table lookup is case-sensitive");
+            assert_eq!(table.rank("na"), None, "a strict prefix does not rank");
+            assert_eq!(table.rank("schemas"), None, "a superstring does not rank");
+        }
+        // An empty table of either kind ranks nothing, which is how "order alphabetically" is spelled.
+        assert_eq!(Table::Builtin(&[]).rank("name"), None);
+        assert_eq!(Table::User(&[]).rank("name"), None);
+    }
 
     #[test]
     fn every_table_name_is_unique() {

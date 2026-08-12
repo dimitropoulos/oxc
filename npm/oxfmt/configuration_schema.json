@@ -152,6 +152,15 @@
       ],
       "markdownDescription": "Sort import statements.\n\nUsing the similar algorithm as [eslint-plugin-perfectionist/sort-imports](https://perfectionist.dev/rules/sort-imports).\nFor details, see each field's documentation.\n\nPass `true` or an object to enable with defaults, or omit/set `false` to disable.\n\n- Languages: JS, JSX, TS, TSX\n- Default: Disabled"
     },
+    "sortOpenapi": {
+      "description": "Sort OpenAPI document keys into a canonical order.\n\nApplies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its\ndefault settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,\n`servers`, `paths`, ...) rather than however it was written.\nFor details, see each field's documentation.\n\nContent-gated: only documents whose root is a mapping with an `openapi` key are touched, so\nany other YAML or JSON file formats identically whether this is on or off.\n`swagger: \"2.0\"` does not match — the key order is OpenAPI 3.x shaped.\n\nPass `false` to disable, or an object to configure the sub-options below.\n\n- Languages: YAML, JSON, JSONC, JSON5\n- Default: `true`",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SortOpenapiUserConfig"
+        }
+      ],
+      "markdownDescription": "Sort OpenAPI document keys into a canonical order.\n\nApplies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its\ndefault settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,\n`servers`, `paths`, ...) rather than however it was written.\nFor details, see each field's documentation.\n\nContent-gated: only documents whose root is a mapping with an `openapi` key are touched, so\nany other YAML or JSON file formats identically whether this is on or off.\n`swagger: \"2.0\"` does not match — the key order is OpenAPI 3.x shaped.\n\nPass `false` to disable, or an object to configure the sub-options below.\n\n- Languages: YAML, JSON, JSONC, JSON5\n- Default: `true`"
+    },
     "sortPackageJson": {
       "description": "Sort `package.json` keys.\n\nThe algorithm is NOT compatible with [prettier-plugin-sort-packagejson](https://github.com/matzkoh/prettier-plugin-packagejson).\nBut we believe it is clearer and easier to navigate.\nFor details, see each field's documentation.\n\n- Languages: JSON (`package.json` only)\n- Default: `true`",
       "allOf": [
@@ -411,6 +420,15 @@
           ],
           "markdownDescription": "Sort import statements.\n\nUsing the similar algorithm as [eslint-plugin-perfectionist/sort-imports](https://perfectionist.dev/rules/sort-imports).\nFor details, see each field's documentation.\n\nPass `true` or an object to enable with defaults, or omit/set `false` to disable.\n\n- Languages: JS, JSX, TS, TSX\n- Default: Disabled"
         },
+        "sortOpenapi": {
+          "description": "Sort OpenAPI document keys into a canonical order.\n\nApplies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its\ndefault settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,\n`servers`, `paths`, ...) rather than however it was written.\nFor details, see each field's documentation.\n\nContent-gated: only documents whose root is a mapping with an `openapi` key are touched, so\nany other YAML or JSON file formats identically whether this is on or off.\n`swagger: \"2.0\"` does not match — the key order is OpenAPI 3.x shaped.\n\nPass `false` to disable, or an object to configure the sub-options below.\n\n- Languages: YAML, JSON, JSONC, JSON5\n- Default: `true`",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SortOpenapiUserConfig"
+            }
+          ],
+          "markdownDescription": "Sort OpenAPI document keys into a canonical order.\n\nApplies the key order [openapi-format](https://github.com/thim81/openapi-format) uses on its\ndefault settings, so an OpenAPI document reads in the conventional order (`openapi`, `info`,\n`servers`, `paths`, ...) rather than however it was written.\nFor details, see each field's documentation.\n\nContent-gated: only documents whose root is a mapping with an `openapi` key are touched, so\nany other YAML or JSON file formats identically whether this is on or off.\n`swagger: \"2.0\"` does not match — the key order is OpenAPI 3.x shaped.\n\nPass `false` to disable, or an object to configure the sub-options below.\n\n- Languages: YAML, JSON, JSONC, JSON5\n- Default: `true`"
+        },
         "sortPackageJson": {
           "description": "Sort `package.json` keys.\n\nThe algorithm is NOT compatible with [prettier-plugin-sort-packagejson](https://github.com/matzkoh/prettier-plugin-packagejson).\nBut we believe it is clearer and easier to navigate.\nFor details, see each field's documentation.\n\n- Languages: JSON (`package.json` only)\n- Default: `true`",
           "allOf": [
@@ -662,6 +680,16 @@
         }
       }
     },
+    "PathsOrderConfig": {
+      "description": "How the entries of the root `paths` mapping are ordered (see `sortOpenapi.paths`).",
+      "type": "string",
+      "enum": [
+        "original",
+        "path",
+        "tags"
+      ],
+      "markdownDescription": "How the entries of the root `paths` mapping are ordered (see `sortOpenapi.paths`)."
+    },
     "ProseWrapConfig": {
       "type": "string",
       "enum": [
@@ -774,6 +802,51 @@
         },
         {
           "$ref": "#/definitions/SortImportsConfig"
+        }
+      ]
+    },
+    "SortOpenapiConfig": {
+      "type": "object",
+      "properties": {
+        "components": {
+          "description": "Sort the members of every entry of the root `components` mapping alphabetically,\nso `components.schemas`, `components.responses` and the rest list their names in order.\n\nA component type whose own name has a field order keeps it (`components.parameters` stays\n`name`, `in`, `schema`, ...); only the unnamed ones fall back to alphabetical.\n\n- Default: `false`",
+          "type": "boolean",
+          "markdownDescription": "Sort the members of every entry of the root `components` mapping alphabetically,\nso `components.schemas`, `components.responses` and the rest list their names in order.\n\nA component type whose own name has a field order keeps it (`components.parameters` stays\n`name`, `in`, `schema`, ...); only the unnamed ones fall back to alphabetical.\n\n- Default: `false`"
+        },
+        "keyOrder": {
+          "description": "Override the field order for individual parent keys, as a map from a key to the order its\nmapping's fields should take.\n\nMerged OVER the built-in orders, so naming one key leaves every other one intact. An empty\narray means \"order this mapping alphabetically\", which is not the same as omitting the key\n(which keeps the built-in order). Fields not listed follow the listed ones, compared\ncase-insensitively.\n\nUse `\"root\"` for the document's own top level.\n\n- Default: `{}`\n- Example: `{ \"get\": [\"summary\", \"operationId\", \"responses\"] }`",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "markdownDescription": "Override the field order for individual parent keys, as a map from a key to the order its\nmapping's fields should take.\n\nMerged OVER the built-in orders, so naming one key leaves every other one intact. An empty\narray means \"order this mapping alphabetically\", which is not the same as omitting the key\n(which keeps the built-in order). Fields not listed follow the listed ones, compared\ncase-insensitively.\n\nUse `\"root\"` for the document's own top level.\n\n- Default: `{}`\n- Example: `{ \"get\": [\"summary\", \"operationId\", \"responses\"] }`"
+        },
+        "paths": {
+          "description": "How the entries of the root `paths` mapping are ordered.\n\n- `\"original\"`: keep the order they were written in\n- `\"path\"`: order by path template, segment by segment, so `/pets` precedes `/pets/{id}`\n- `\"tags\"`: order by each path item's first tag\n\nWith `\"tags\"`, the tag is taken from the first method the path item defines out of `get`,\n`query`, `post`, `put`, `delete`, `patch`, `options`, `head`, and a path item with no tagged\nmethod sorts first.\n\nUnlike the field order, these compare case-SENSITIVELY.\n\n- Default: `\"original\"`",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PathsOrderConfig"
+            }
+          ],
+          "markdownDescription": "How the entries of the root `paths` mapping are ordered.\n\n- `\"original\"`: keep the order they were written in\n- `\"path\"`: order by path template, segment by segment, so `/pets` precedes `/pets/{id}`\n- `\"tags\"`: order by each path item's first tag\n\nWith `\"tags\"`, the tag is taken from the first method the path item defines out of `get`,\n`query`, `post`, `put`, `delete`, `patch`, `options`, `head`, and a path item with no tagged\nmethod sorts first.\n\nUnlike the field order, these compare case-SENSITIVELY.\n\n- Default: `\"original\"`"
+        },
+        "properties": {
+          "description": "Sort the members of `properties` mappings under `components.schemas` alphabetically.\n\nScoped to schema definitions: a `properties` mapping elsewhere, such as inside a response\nschema, is left alone.\n\n- Default: `false`",
+          "type": "boolean",
+          "markdownDescription": "Sort the members of `properties` mappings under `components.schemas` alphabetically.\n\nScoped to schema definitions: a `properties` mapping elsewhere, such as inside a response\nschema, is left alone.\n\n- Default: `false`"
+        }
+      }
+    },
+    "SortOpenapiUserConfig": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/definitions/SortOpenapiConfig"
         }
       ]
     },

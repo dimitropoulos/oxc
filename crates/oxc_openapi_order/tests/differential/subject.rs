@@ -3,7 +3,7 @@
 //! This is the shape a formatter backend will use: walk the tree, ask [`resolve`] once per mapping
 //! with that mapping's ancestry, and apply the permutation it hands back.
 
-use oxc_openapi_order::{Options, Scratch, Step, permutation, resolve, resolve_root};
+use oxc_openapi_order::{Options, Scratch, Step, Table, permutation, resolve, resolve_root};
 
 use crate::differential::value::Value;
 
@@ -93,7 +93,7 @@ fn visit(
 }
 
 /// Apply the permutation for `table` to `entries`, if one is needed.
-fn apply(entries: &mut Vec<(String, Value)>, table: &[&str], scratch: &mut Scratch) {
+fn apply(entries: &mut Vec<(String, Value)>, table: Table<'_>, scratch: &mut Scratch) {
     let keys: Vec<&str> = entries.iter().map(|(key, _)| key.as_str()).collect();
     let Some(permutation) = permutation(table, &keys, scratch) else { return };
     let mut reordered: Vec<(String, Value)> = Vec::with_capacity(entries.len());

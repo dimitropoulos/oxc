@@ -1,0 +1,89 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// `sortOpenapi.paths: "tags"` orders the `paths` object by each path item's TAG key.
+//
+// The JSON twin of the YAML backend's `paths-tags` fixture, and it must produce the same order.
+//
+// The tag key is the first tag of the first method present in
+// `[get, query, post, put, delete, patch, options, head]` with a non-empty `tags`:
+//
+// `/two-methods` keys on `zebra` from its `post`, NOT `alpha` from its `patch` -- `post` comes earlier
+//   in that list, and the list order is upstream's, not the source's.
+// `/first-tag-only` keys on `beta`, not `aardvark`: only the FIRST tag counts.
+// `/untagged` and `/no-methods` key on the empty string, which sorts before every real tag, and their
+//   tie keeps SOURCE order.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/two-methods": {
+      "patch": { "tags": ["alpha"], "responses": {} },
+      "post": { "tags": ["zebra"], "responses": {} }
+    },
+    "/first-tag-only": { "get": { "tags": ["beta", "aardvark"], "responses": {} } },
+    "/untagged": { "get": { "responses": {} } },
+    "/no-methods": { "description": "not an operation" }
+  }
+}
+
+==================== Output ====================
+-------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"paths":"tags"} }
+-------------------------------------------------
+// `sortOpenapi.paths: "tags"` orders the `paths` object by each path item's TAG key.
+//
+// The JSON twin of the YAML backend's `paths-tags` fixture, and it must produce the same order.
+//
+// The tag key is the first tag of the first method present in
+// `[get, query, post, put, delete, patch, options, head]` with a non-empty `tags`:
+//
+// `/two-methods` keys on `zebra` from its `post`, NOT `alpha` from its `patch` -- `post` comes earlier
+//   in that list, and the list order is upstream's, not the source's.
+// `/first-tag-only` keys on `beta`, not `aardvark`: only the FIRST tag counts.
+// `/untagged` and `/no-methods` key on the empty string, which sorts before every real tag, and their
+//   tie keeps SOURCE order.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/untagged": { "get": { "responses": {} } },
+    "/no-methods": { "description": "not an operation" },
+    "/first-tag-only": {
+      "get": { "responses": {}, "tags": ["beta", "aardvark"] }
+    },
+    "/two-methods": {
+      "patch": { "responses": {}, "tags": ["alpha"] },
+      "post": { "responses": {}, "tags": ["zebra"] }
+    }
+  }
+}
+
+--------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"paths":"tags"} }
+--------------------------------------------------
+// `sortOpenapi.paths: "tags"` orders the `paths` object by each path item's TAG key.
+//
+// The JSON twin of the YAML backend's `paths-tags` fixture, and it must produce the same order.
+//
+// The tag key is the first tag of the first method present in
+// `[get, query, post, put, delete, patch, options, head]` with a non-empty `tags`:
+//
+// `/two-methods` keys on `zebra` from its `post`, NOT `alpha` from its `patch` -- `post` comes earlier
+//   in that list, and the list order is upstream's, not the source's.
+// `/first-tag-only` keys on `beta`, not `aardvark`: only the FIRST tag counts.
+// `/untagged` and `/no-methods` key on the empty string, which sorts before every real tag, and their
+//   tie keeps SOURCE order.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/untagged": { "get": { "responses": {} } },
+    "/no-methods": { "description": "not an operation" },
+    "/first-tag-only": { "get": { "responses": {}, "tags": ["beta", "aardvark"] } },
+    "/two-methods": {
+      "patch": { "responses": {}, "tags": ["alpha"] },
+      "post": { "responses": {}, "tags": ["zebra"] }
+    }
+  }
+}
+
+===================== End =====================

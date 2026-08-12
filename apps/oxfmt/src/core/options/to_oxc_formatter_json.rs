@@ -7,6 +7,7 @@ use super::super::oxfmtrc::{
     FormatConfig, ObjectWrapConfig, QuotePropsConfig, SortPackageJsonConfig,
     SortPackageJsonUserConfig, TrailingCommaConfig,
 };
+use super::to_sort_openapi;
 
 /// Convert `FormatConfig` into `JsonFormatOptions` for `oxc_formatter_json`.
 ///
@@ -53,6 +54,9 @@ pub fn to_oxc_formatter_json(
             QuotePropsConfig::Preserve => QuoteProps::Preserve,
         };
     }
+    // [Oxfmt] sortOpenapi: object | boolean.
+    // `json-stringify` has its own printer and ignores this; see `SortOpenapi`.
+    options.sort_openapi = to_sort_openapi(config);
 
     options
 }

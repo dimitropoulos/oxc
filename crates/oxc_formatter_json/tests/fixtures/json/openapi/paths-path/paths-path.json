@@ -1,0 +1,23 @@
+// `sortOpenapi.paths: "path"` orders the `paths` object by path template, segment by segment.
+//
+// The JSON twin of the YAML backend's `paths-path` fixture, and it must produce the same order.
+//
+// Off by default (`"original"`), and it is the ONLY thing that orders this object: no built-in table
+// names `paths`, so with the default these stay exactly as written.
+//
+// `/pets/{id}` before `/pets-x` is what makes this segment-by-segment rather than flat text: flat, `-`
+// (0x2D) precedes `/` (0x2F) and `/pets-x` would win. By segment, `pets-x` is one segment sorting
+// after `pets`, so the deeper path comes first.
+//
+// Case is SENSITIVE here, unlike the key comparator: `/Zebra` precedes `/albums`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/pets/{id}": { "get": { "responses": {}, "operationId": "getPet" } },
+    "/petstore": { "get": { "responses": {}, "operationId": "store" } },
+    "/pets-x": { "get": { "responses": {}, "operationId": "x" } },
+    "/pets": { "get": { "responses": {}, "operationId": "listPets" } },
+    "/albums": { "get": { "responses": {}, "operationId": "albums" } },
+    "/Zebra": { "get": { "responses": {}, "operationId": "zebra" } }
+  }
+}
