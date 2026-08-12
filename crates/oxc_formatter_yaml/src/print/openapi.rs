@@ -36,13 +36,30 @@ use crate::{
 /// [`YamlFormatContext::openapi`]: crate::context::YamlFormatContext::openapi
 pub struct OpenapiState<'a> {
     session: Session<'a>,
-    /// Start offsets of every anchor and alias in the stream, ascending. Computed once.
-    anchor_and_alias_starts: &'a [u32],
+    root: &'a Root<'a>,
+    /// Start offsets of every anchor and alias in the stream, ascending.
+    ///
+    /// `None` until the first mapping actually reaches refusal (2), then computed once and reused.
+    /// Deferred rather than built with the rest of the parse because the walk is O(nodes) and only
+    /// this refusal reads it: a document with no OpenAPI mapping in it never pays for the index.
+    ///
+    /// The trigger is the printer arriving here, not a second reading of the content gate, so there
+    /// is no spelling of "is this OpenAPI" to keep in step with `document_is_openapi`.
+    anchor_and_alias_starts: Option<Vec<u32>>,
 }
 
 impl<'a> OpenapiState<'a> {
-    pub fn new(anchor_and_alias_starts: &'a [u32]) -> Self {
-        Self { session: Session::new(), anchor_and_alias_starts }
+    pub fn new(root: &'a Root<'a>) -> Self {
+        Self { session: Session::new(), root, anchor_and_alias_starts: None }
+    }
+
+    /// The anchor/alias index, walking the stream to build it on first use.
+    fn anchor_and_alias_starts(&mut self) -> &[u32] {
+        self.anchor_and_alias_starts.get_or_insert_with(|| {
+            let mut starts = Vec::new();
+            super::anchor_and_alias_starts(self.root, &mut starts);
+            starts
+        })
     }
 }
 
@@ -248,12 +265,12 @@ pub fn begin_mapping<'a>(mapping: &'a Mapping<'a>, f: &YamlFormatter<'_, 'a>) ->
     //
     // `is_openapi_root` is the content gate the policy asks for at an empty ancestry, passed
     // rather than hard-coded so the two spell the gate the same way even if it changes.
-    let (ordering, anchors) = {
+    let ordering = {
         let state = f.context().openapi().borrow();
-        (state.session.ordering(sort, is_openapi_root)?, state.anchor_and_alias_starts)
+        state.session.ordering(sort, is_openapi_root)?
     };
 
-    if !may_reorder(mapping, anchors, f) {
+    if !may_reorder(mapping, f) {
         return None;
     }
 
@@ -353,11 +370,7 @@ fn blank_line_between<'a>(
 /// a comment, so the only invariant-clean reordering is one with no comment in play. The reference
 /// implementation deletes every comment on its default settings and relocates them on
 /// `keepComments`, which is exactly the behaviour those invariants forbid.
-fn may_reorder<'a>(
-    mapping: &Mapping<'a>,
-    anchor_and_alias_starts: &[u32],
-    f: &YamlFormatter<'_, 'a>,
-) -> bool {
+fn may_reorder<'a>(mapping: &Mapping<'a>, f: &YamlFormatter<'_, 'a>) -> bool {
     let source = f.context().source_text();
 
     // (1) A comment anywhere this mapping's printing can touch.
@@ -379,8 +392,16 @@ fn may_reorder<'a>(
     // The reference never meets it because its JSON round-trip expands aliases.
     //
     // Byte-scanning for `&` / `*` would be wrong: they are indicators only at token start, and
-    // appear constantly inside URLs, globs and prose. Hence the precomputed index.
-    if spans_any(anchor_and_alias_starts, mapping.span.start, mapping.span.end) {
+    // appear constantly inside URLs, globs and prose. Hence the index, built on the first mapping
+    // to get this far and reused after. The borrow is confined to this block: nothing inside it
+    // re-enters the formatter, and holding one across a nested write is what the discipline on
+    // `OpenapiState` forbids.
+    let has_anchor_or_alias = {
+        let mut state = f.context().openapi().borrow_mut();
+        let starts = state.anchor_and_alias_starts();
+        spans_any(starts, mapping.span.start, mapping.span.end)
+    };
+    if has_anchor_or_alias {
         return false;
     }
 

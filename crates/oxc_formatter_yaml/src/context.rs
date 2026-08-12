@@ -1,6 +1,7 @@
 use std::cell::{Cell, RefCell};
 
 use oxc_formatter_core::{FormatContext, SourceText};
+use oxc_yaml_parser::ast::Root;
 
 use crate::{
     comments::{Comments, SourceComment},
@@ -20,7 +21,8 @@ pub struct YamlFormatContext<'a> {
     /// block scalars compare against it.
     last_descendant_end: u32,
     /// Per-run state for OpenAPI key ordering: the shared `oxc_openapi_order` session (the ancestry
-    /// of the mapping being printed and its reused ordering buffers) plus the anchor/alias index.
+    /// of the mapping being printed and its reused ordering buffers) plus the lazily built
+    /// anchor/alias index.
     ///
     /// A `RefCell` rather than [`Cell`] because the state is not `Copy`; the discipline is the same
     /// as `collection_depth`'s (per-run, mutated through `&self` at print sites). No borrow is ever
@@ -38,7 +40,7 @@ impl<'a> YamlFormatContext<'a> {
         source_code: &'a str,
         comments: &'a [SourceComment],
         last_descendant_end: u32,
-        anchor_and_alias_starts: &'a [u32],
+        root: &'a Root<'a>,
     ) -> Self {
         Self {
             options,
@@ -46,7 +48,7 @@ impl<'a> YamlFormatContext<'a> {
             comments: Comments::new(comments),
             collection_depth: Cell::new(0),
             last_descendant_end,
-            openapi: RefCell::new(OpenapiState::new(anchor_and_alias_starts)),
+            openapi: RefCell::new(OpenapiState::new(root)),
             openapi_document: Cell::new(false),
         }
     }

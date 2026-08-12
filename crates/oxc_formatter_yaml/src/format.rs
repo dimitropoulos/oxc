@@ -79,7 +79,6 @@ struct ParsedYaml<'a> {
     root: &'a Root<'a>,
     source: &'a str,
     comments: &'a [SourceComment],
-    anchor_and_alias_starts: &'a [u32],
 }
 
 impl<'a> ParsedYaml<'a> {
@@ -89,7 +88,7 @@ impl<'a> ParsedYaml<'a> {
             self.source,
             self.comments,
             print::last_descendant_end(self.root),
-            self.anchor_and_alias_starts,
+            self.root,
         )
     }
 }
@@ -124,14 +123,7 @@ fn parse_root<'a>(
     )
     .into_arena_slice();
 
-    // Anchors and aliases are indexed once for the run: the OpenAPI bail-out asks whether any lies
-    // inside a mapping, and asking per mapping would re-walk each subtree at every enclosing level.
-    let mut starts = Vec::new();
-    print::anchor_and_alias_starts(root, &mut starts);
-    let anchor_and_alias_starts: &'a [u32] =
-        ArenaVec::from_iter_in(starts, &allocator).into_arena_slice();
-
-    Ok(ParsedYaml { root, source, comments, anchor_and_alias_starts })
+    Ok(ParsedYaml { root, source, comments })
 }
 
 /// Emits the stream's documents followed by any trailing comments, and the final newline.
