@@ -58,6 +58,13 @@ pub fn apply_json_options(options: &mut JsonFormatOptions, json: &OptionSet) {
                     };
                 }
             }
+            // Oxfmt's own extension, enabled by default; a fixture opts out to pin that the option is
+            // what does the reordering rather than something else.
+            "sortOpenapi" => {
+                if let Some(b) = value.as_bool() {
+                    options.sort_openapi = b.into();
+                }
+            }
             "objectWrap" => {
                 if let Some(s) = value.as_str() {
                     options.expand = match s {

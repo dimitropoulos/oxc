@@ -49,6 +49,8 @@ pub struct JsonFormatOptions {
     pub single_quote: SingleQuote,
     // Used by: JSON5
     pub quote_props: QuoteProps,
+    // Used by: JSON, JSONC, JSON5 (not json-stringify, which has its own printer)
+    pub sort_openapi: SortOpenapi,
 }
 
 impl JsonFormatOptions {
@@ -135,6 +137,35 @@ impl SingleQuote {
 }
 
 impl From<bool> for SingleQuote {
+    fn from(value: bool) -> Self {
+        Self(value)
+    }
+}
+
+/// Whether object properties are reordered per the OpenAPI key-ordering policy
+/// (`oxc_openapi_order`).
+///
+/// Enabled by default, and content-gated: nothing is reordered unless the root value is an object
+/// with an `openapi` member. A document without one is byte-identical with this on.
+///
+/// Deliberately not applied to the `json-stringify` variant: it has a separate printer, and its files
+/// (`package.json`, `composer.json`, `.importmap`) are never OpenAPI documents.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct SortOpenapi(bool);
+
+impl SortOpenapi {
+    pub fn value(self) -> bool {
+        self.0
+    }
+}
+
+impl Default for SortOpenapi {
+    fn default() -> Self {
+        Self(true)
+    }
+}
+
+impl From<bool> for SortOpenapi {
     fn from(value: bool) -> Self {
         Self(value)
     }

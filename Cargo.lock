@@ -2144,6 +2144,7 @@ dependencies = [
  "oxc_diagnostics",
  "oxc_formatter_core",
  "oxc_formatter_tests",
+ "oxc_openapi_order",
  "oxc_parser",
  "oxc_span",
  "oxc_syntax",

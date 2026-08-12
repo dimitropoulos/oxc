@@ -7,6 +7,7 @@ use oxc_formatter_core::{
     },
     write,
 };
+use oxc_openapi_order::Step;
 use oxc_span::GetSpan;
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
     separated::{TrailingSeparator, blank_line_after_comma, write_separated},
 };
 
-use super::{FmtJsonValue, FormatInvalidJson, JsonFormatter, format_with};
+use super::{FmtJsonValue, FormatInvalidJson, JsonFormatter, format_with, openapi};
 
 pub struct FmtJsonArray<'a, 'b> {
     pub array: &'b ArrayExpression<'a>,
@@ -98,7 +99,7 @@ impl<'a> Format<'a, JsonFormatContext<'a>> for FmtJsonArray<'a, '_> {
                         }
                     });
                     let item = format_with(move |f| {
-                        write_array_element(element, f);
+                        write_array_element(i, element, f);
                         if i < last_idx {
                             write!(f, ",");
                         } else if allow_trailing {
@@ -134,8 +135,8 @@ impl<'a> Format<'a, JsonFormatContext<'a>> for FmtJsonArray<'a, '_> {
             } else {
                 TrailingSeparator::when_breaking(f.context().options().allow_trailing_comma())
             };
-            write_separated(f, &spans, sep, self.array.span.end, |i, f| {
-                write_array_element(&self.array.elements[i], f);
+            write_separated(f, &spans, sep, self.array.span.end, None, |i, f| {
+                write_array_element(i, &self.array.elements[i], f);
             });
 
             if trailing_comma {
@@ -191,12 +192,20 @@ fn should_force_expand(elements: &[ArrayExpressionElement<'_>]) -> bool {
 /// the surrounding separator alone represents the hole.
 /// `SpreadElement` isn't valid JSON;
 /// we record a diagnostic and emit its source slice verbatim.
-fn write_array_element<'a>(element: &ArrayExpressionElement<'a>, f: &mut JsonFormatter<'_, 'a>) {
+fn write_array_element<'a>(
+    index: usize,
+    element: &ArrayExpressionElement<'a>,
+    f: &mut JsonFormatter<'_, 'a>,
+) {
     if matches!(element, ArrayExpressionElement::Elision(_)) {
         return;
     }
     if let Some(expr) = element.as_expression() {
-        FmtJsonValue { expression: expr }.fmt(f);
+        // The element's ancestry step. Index steps are load-bearing: the policy indexes the ancestry
+        // absolutely, and its "containing object" must be absent across an array boundary.
+        openapi::with_step(Step::index(index), f, |f| {
+            FmtJsonValue { expression: expr }.fmt(f);
+        });
     } else {
         // The only remaining variant (after `Elision` and `Expression`) is `SpreadElement`.
         write!(f, FormatInvalidJson(element.span()));

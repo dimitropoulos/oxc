@@ -23,6 +23,6 @@ pub use crate::{
     format::{format, format_to_ir},
     options::{
         BracketSpacing, Expand, JsonFormatOptions, JsonVariant, QuoteProps, SingleQuote,
-        TrailingCommas,
+        SortOpenapi, TrailingCommas,
     },
 };
