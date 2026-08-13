@@ -1,0 +1,252 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Number values survive reordering as source text, never through an `f64`.
+#
+# openapi-format cannot do this. It reads documents through a JavaScript object, so a number wider
+# than an `f64` would lose digits on the way in. It works around that by rewriting large numbers to
+# `<digits>===` sentinel strings before parsing and decoding them again on output, with this regex
+# (`utils/file.js:761`):
+#
+#     /: ([0-9]+(\.[0-9]+)?)\b(?!\.[0-9])===/g
+#
+# There is no leading `-`, so a negative number is encoded and then never decoded, and the sentinel
+# reaches the output as a quoted string. Two files in the benchmark corpora come out corrupt that
+# way: `artifacts.yaml` with 192 occurrences of `minimum: -9007199254740991===`, and
+# `magic-on-ramps.yaml` with `example: -80.56092644815843===`.
+#
+# oxfmt has no encode step to get wrong. A permuted entry is re-emitted from its source span, so
+# every scalar below has to come out byte-identical no matter how many digits it carries.
+#
+# Every schema sits under a `properties` parent, whose table is
+# `[description, type, items, format, example, default, enum]` with unranked keys alphabetical
+# after it, and each one is written in an order that table changes. So each value is carried
+# through the permutation rather than left in place. Nothing inside a schema is commented, because
+# a comment in a mapping's span makes it refuse to reorder, which would leave the values sitting
+# still and prove nothing. The names carry what each case is for:
+#
+# - `upstream-corrupts-this` and `-too` hold the two values openapi-format corrupts. Both are
+#   negative, so its decoder never matches them.
+# - `beyond-exact-integers` needs more than 53 bits. A round-trip through an `f64` returns ...92 for
+#   `9007199254740993`, so any digit moving here is proof a parse crept in.
+# - `beyond-f64-precision` has more significant digits than an `f64` carries. Printing the nearest
+#   double gives `0.1`.
+# - `overflows-to-infinity` is not finite as an `f64`, and infinity has no YAML number spelling.
+# - `signed-zero` parses to a value whose default printed form is `0`, dropping the sign.
+# - `preserved-spellings` keeps the author's exponent and trailing-zero styles, which YAML holds as
+#   text.
+# - `sentinel-shaped-string` is a string that already ends in the sentinel. Upstream's decoder
+#   rewrites it to a bare number, turning a string into a number. Nothing here reads the sentinel.
+---
+openapi: 3.1.0
+info:
+  title: large numbers
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Limits:
+      properties:
+        upstream-corrupts-this:
+          default: -9007199254740991
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          type: integer
+        upstream-corrupts-this-too:
+          example: -80.56092644815843
+          type: number
+        beyond-exact-integers:
+          default: 9007199254740993
+          minimum: -9007199254740993
+          maximum: 18446744073709551616
+          type: integer
+        beyond-f64-precision:
+          example: 0.1000000000000000055511151231257827
+          type: number
+        overflows-to-infinity:
+          example: 1e400
+          default: -1e400
+          type: number
+        signed-zero:
+          default: -0
+          example: -0.0
+          type: number
+        preserved-spellings:
+          example: 1.0e+2
+          default: 0.5000
+          maximum: 1E10
+          type: number
+        sentinel-shaped-string:
+          example: "9007199254740991==="
+          default: "-80.56092644815843==="
+          type: string
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Number values survive reordering as source text, never through an `f64`.
+#
+# openapi-format cannot do this. It reads documents through a JavaScript object, so a number wider
+# than an `f64` would lose digits on the way in. It works around that by rewriting large numbers to
+# `<digits>===` sentinel strings before parsing and decoding them again on output, with this regex
+# (`utils/file.js:761`):
+#
+#     /: ([0-9]+(\.[0-9]+)?)\b(?!\.[0-9])===/g
+#
+# There is no leading `-`, so a negative number is encoded and then never decoded, and the sentinel
+# reaches the output as a quoted string. Two files in the benchmark corpora come out corrupt that
+# way: `artifacts.yaml` with 192 occurrences of `minimum: -9007199254740991===`, and
+# `magic-on-ramps.yaml` with `example: -80.56092644815843===`.
+#
+# oxfmt has no encode step to get wrong. A permuted entry is re-emitted from its source span, so
+# every scalar below has to come out byte-identical no matter how many digits it carries.
+#
+# Every schema sits under a `properties` parent, whose table is
+# `[description, type, items, format, example, default, enum]` with unranked keys alphabetical
+# after it, and each one is written in an order that table changes. So each value is carried
+# through the permutation rather than left in place. Nothing inside a schema is commented, because
+# a comment in a mapping's span makes it refuse to reorder, which would leave the values sitting
+# still and prove nothing. The names carry what each case is for:
+#
+# - `upstream-corrupts-this` and `-too` hold the two values openapi-format corrupts. Both are
+#   negative, so its decoder never matches them.
+# - `beyond-exact-integers` needs more than 53 bits. A round-trip through an `f64` returns ...92 for
+#   `9007199254740993`, so any digit moving here is proof a parse crept in.
+# - `beyond-f64-precision` has more significant digits than an `f64` carries. Printing the nearest
+#   double gives `0.1`.
+# - `overflows-to-infinity` is not finite as an `f64`, and infinity has no YAML number spelling.
+# - `signed-zero` parses to a value whose default printed form is `0`, dropping the sign.
+# - `preserved-spellings` keeps the author's exponent and trailing-zero styles, which YAML holds as
+#   text.
+# - `sentinel-shaped-string` is a string that already ends in the sentinel. Upstream's decoder
+#   rewrites it to a bare number, turning a string into a number. Nothing here reads the sentinel.
+---
+openapi: 3.1.0
+info:
+  title: large numbers
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Limits:
+      properties:
+        upstream-corrupts-this:
+          type: integer
+          default: -9007199254740991
+          maximum: 9007199254740991
+          minimum: -9007199254740991
+        upstream-corrupts-this-too:
+          type: number
+          example: -80.56092644815843
+        beyond-exact-integers:
+          type: integer
+          default: 9007199254740993
+          maximum: 18446744073709551616
+          minimum: -9007199254740993
+        beyond-f64-precision:
+          type: number
+          example: 0.1000000000000000055511151231257827
+        overflows-to-infinity:
+          type: number
+          example: 1e400
+          default: -1e400
+        signed-zero:
+          type: number
+          example: -0.0
+          default: -0
+        preserved-spellings:
+          type: number
+          example: 1.0e+2
+          default: 0.5000
+          maximum: 1E10
+        sentinel-shaped-string:
+          type: string
+          example: "9007199254740991==="
+          default: "-80.56092644815843==="
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Number values survive reordering as source text, never through an `f64`.
+#
+# openapi-format cannot do this. It reads documents through a JavaScript object, so a number wider
+# than an `f64` would lose digits on the way in. It works around that by rewriting large numbers to
+# `<digits>===` sentinel strings before parsing and decoding them again on output, with this regex
+# (`utils/file.js:761`):
+#
+#     /: ([0-9]+(\.[0-9]+)?)\b(?!\.[0-9])===/g
+#
+# There is no leading `-`, so a negative number is encoded and then never decoded, and the sentinel
+# reaches the output as a quoted string. Two files in the benchmark corpora come out corrupt that
+# way: `artifacts.yaml` with 192 occurrences of `minimum: -9007199254740991===`, and
+# `magic-on-ramps.yaml` with `example: -80.56092644815843===`.
+#
+# oxfmt has no encode step to get wrong. A permuted entry is re-emitted from its source span, so
+# every scalar below has to come out byte-identical no matter how many digits it carries.
+#
+# Every schema sits under a `properties` parent, whose table is
+# `[description, type, items, format, example, default, enum]` with unranked keys alphabetical
+# after it, and each one is written in an order that table changes. So each value is carried
+# through the permutation rather than left in place. Nothing inside a schema is commented, because
+# a comment in a mapping's span makes it refuse to reorder, which would leave the values sitting
+# still and prove nothing. The names carry what each case is for:
+#
+# - `upstream-corrupts-this` and `-too` hold the two values openapi-format corrupts. Both are
+#   negative, so its decoder never matches them.
+# - `beyond-exact-integers` needs more than 53 bits. A round-trip through an `f64` returns ...92 for
+#   `9007199254740993`, so any digit moving here is proof a parse crept in.
+# - `beyond-f64-precision` has more significant digits than an `f64` carries. Printing the nearest
+#   double gives `0.1`.
+# - `overflows-to-infinity` is not finite as an `f64`, and infinity has no YAML number spelling.
+# - `signed-zero` parses to a value whose default printed form is `0`, dropping the sign.
+# - `preserved-spellings` keeps the author's exponent and trailing-zero styles, which YAML holds as
+#   text.
+# - `sentinel-shaped-string` is a string that already ends in the sentinel. Upstream's decoder
+#   rewrites it to a bare number, turning a string into a number. Nothing here reads the sentinel.
+---
+openapi: 3.1.0
+info:
+  title: large numbers
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Limits:
+      properties:
+        upstream-corrupts-this:
+          type: integer
+          default: -9007199254740991
+          maximum: 9007199254740991
+          minimum: -9007199254740991
+        upstream-corrupts-this-too:
+          type: number
+          example: -80.56092644815843
+        beyond-exact-integers:
+          type: integer
+          default: 9007199254740993
+          maximum: 18446744073709551616
+          minimum: -9007199254740993
+        beyond-f64-precision:
+          type: number
+          example: 0.1000000000000000055511151231257827
+        overflows-to-infinity:
+          type: number
+          example: 1e400
+          default: -1e400
+        signed-zero:
+          type: number
+          example: -0.0
+          default: -0
+        preserved-spellings:
+          type: number
+          example: 1.0e+2
+          default: 0.5000
+          maximum: 1E10
+        sentinel-shaped-string:
+          type: string
+          example: "9007199254740991==="
+          default: "-80.56092644815843==="
+
+===================== End =====================

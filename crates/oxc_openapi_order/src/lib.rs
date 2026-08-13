@@ -35,7 +35,7 @@
 //!
 //! # Deliberate divergences from upstream
 //!
-//! Upstream reaches its result by rebuilding JS objects, which costs it three behaviours
+//! Upstream reaches its result by rebuilding JS objects, which costs it four behaviours
 //! a formatter must not have:
 //!
 //! - **Integer-like keys are reordered.** ECMAScript object property order
@@ -50,6 +50,15 @@
 //!   for any table including the empty one. We never change a node's kind.
 //! - **A `__proto__` key is dropped.** Rebuilding with `obj[key] = value` cannot
 //!   round-trip it. We preserve every key.
+//! - **A negative number wider than an `f64` reaches the output as a string.** Reading a document
+//!   into a JS object would lose digits, so upstream rewrites large numbers to `<digits>===`
+//!   sentinel strings before parsing and decodes them again on output. Its decode regex
+//!   (`utils/file.js:761`) has no leading `-`, so a negative number is encoded and then never
+//!   decoded, and the sentinel survives as a quoted string: `artifacts.yaml` gets 192 occurrences
+//!   of `minimum: -9007199254740991===`. We carry every scalar as source text, so there is no
+//!   encode step to get wrong, and it costs no precision to skip. The `large-numbers` fixture in
+//!   each backend pins this, alongside a `numbers_survive_reordering_as_text` unit test that
+//!   compares ordering on against ordering off so a regenerated snapshot cannot hide a change.
 //!
 //! Two more follow from asking the question once instead of twice:
 //!
