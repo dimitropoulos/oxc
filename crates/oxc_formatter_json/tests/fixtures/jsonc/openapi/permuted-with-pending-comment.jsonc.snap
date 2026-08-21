@@ -1,0 +1,127 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// An object is permuted while a comment is still pending further down the document.
+//
+// This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+// beyond the end of the object being printed. It cannot claim the gap it is handed is forward-ordered:
+// the properties have moved, so the "previous" one can sit later in the source than the next, and a
+// comment pass measuring that gap sees an inverted range.
+//
+// The YAML backend had exactly this assert too strong -- demanding either a forward gap or no pending
+// comment at all -- and it crashed debug builds on an ordinary document while release was correct. The
+// JSON backend carries the same assert, so it gets the same fixture rather than relying on the YAML one.
+//
+// `get` must come out reordered below, or this proves nothing: a refused object never reaches the
+// permuted separator. It also pins the refusal as per-object, since the tail comment refuses the root
+// (so `paths` stays before `info`) while `get` permutes regardless.
+{
+  "openapi": "3.0.0",
+  "paths": { "/p": { "get": { "responses": {}, "summary": "s", "operationId": "op" } } },
+  "info": { "version": "1", "title": "t" }
+  // Still pending while `get` above is permuted, and belongs to nothing that moved.
+}
+
+==================== Output ====================
+------------------------------------
+{ printWidth: 80, variant: "jsonc" }
+------------------------------------
+// An object is permuted while a comment is still pending further down the document.
+//
+// This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+// beyond the end of the object being printed. It cannot claim the gap it is handed is forward-ordered:
+// the properties have moved, so the "previous" one can sit later in the source than the next, and a
+// comment pass measuring that gap sees an inverted range.
+//
+// The YAML backend had exactly this assert too strong -- demanding either a forward gap or no pending
+// comment at all -- and it crashed debug builds on an ordinary document while release was correct. The
+// JSON backend carries the same assert, so it gets the same fixture rather than relying on the YAML one.
+//
+// `get` must come out reordered below, or this proves nothing: a refused object never reaches the
+// permuted separator. It also pins the refusal as per-object, since the tail comment refuses the root
+// (so `paths` stays before `info`) while `get` permutes regardless.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": { "get": { "operationId": "op", "summary": "s", "responses": {} } },
+  },
+  "info": { "version": "1", "title": "t" },
+  // Still pending while `get` above is permuted, and belongs to nothing that moved.
+}
+
+-------------------------------------
+{ printWidth: 100, variant: "jsonc" }
+-------------------------------------
+// An object is permuted while a comment is still pending further down the document.
+//
+// This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+// beyond the end of the object being printed. It cannot claim the gap it is handed is forward-ordered:
+// the properties have moved, so the "previous" one can sit later in the source than the next, and a
+// comment pass measuring that gap sees an inverted range.
+//
+// The YAML backend had exactly this assert too strong -- demanding either a forward gap or no pending
+// comment at all -- and it crashed debug builds on an ordinary document while release was correct. The
+// JSON backend carries the same assert, so it gets the same fixture rather than relying on the YAML one.
+//
+// `get` must come out reordered below, or this proves nothing: a refused object never reaches the
+// permuted separator. It also pins the refusal as per-object, since the tail comment refuses the root
+// (so `paths` stays before `info`) while `get` permutes regardless.
+{
+  "openapi": "3.0.0",
+  "paths": { "/p": { "get": { "operationId": "op", "summary": "s", "responses": {} } } },
+  "info": { "version": "1", "title": "t" },
+  // Still pending while `get` above is permuted, and belongs to nothing that moved.
+}
+
+-----------------------------------------------------------
+{ printWidth: 80, trailingComma: "none", variant: "jsonc" }
+-----------------------------------------------------------
+// An object is permuted while a comment is still pending further down the document.
+//
+// This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+// beyond the end of the object being printed. It cannot claim the gap it is handed is forward-ordered:
+// the properties have moved, so the "previous" one can sit later in the source than the next, and a
+// comment pass measuring that gap sees an inverted range.
+//
+// The YAML backend had exactly this assert too strong -- demanding either a forward gap or no pending
+// comment at all -- and it crashed debug builds on an ordinary document while release was correct. The
+// JSON backend carries the same assert, so it gets the same fixture rather than relying on the YAML one.
+//
+// `get` must come out reordered below, or this proves nothing: a refused object never reaches the
+// permuted separator. It also pins the refusal as per-object, since the tail comment refuses the root
+// (so `paths` stays before `info`) while `get` permutes regardless.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": { "get": { "operationId": "op", "summary": "s", "responses": {} } }
+  },
+  "info": { "version": "1", "title": "t" }
+  // Still pending while `get` above is permuted, and belongs to nothing that moved.
+}
+
+------------------------------------------------------------
+{ printWidth: 100, trailingComma: "none", variant: "jsonc" }
+------------------------------------------------------------
+// An object is permuted while a comment is still pending further down the document.
+//
+// This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+// beyond the end of the object being printed. It cannot claim the gap it is handed is forward-ordered:
+// the properties have moved, so the "previous" one can sit later in the source than the next, and a
+// comment pass measuring that gap sees an inverted range.
+//
+// The YAML backend had exactly this assert too strong -- demanding either a forward gap or no pending
+// comment at all -- and it crashed debug builds on an ordinary document while release was correct. The
+// JSON backend carries the same assert, so it gets the same fixture rather than relying on the YAML one.
+//
+// `get` must come out reordered below, or this proves nothing: a refused object never reaches the
+// permuted separator. It also pins the refusal as per-object, since the tail comment refuses the root
+// (so `paths` stays before `info`) while `get` permutes regardless.
+{
+  "openapi": "3.0.0",
+  "paths": { "/p": { "get": { "operationId": "op", "summary": "s", "responses": {} } } },
+  "info": { "version": "1", "title": "t" }
+  // Still pending while `get` above is permuted, and belongs to nothing that moved.
+}
+
+===================== End =====================

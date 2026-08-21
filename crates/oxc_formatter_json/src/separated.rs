@@ -14,9 +14,11 @@ use oxc_formatter_core::{
 };
 use oxc_span::Span;
 
+use oxc_openapi_order::Frame;
+
 use crate::{
     comments::{count_newlines, write_single_comment},
-    print::{JsonFormatter, format_with},
+    print::{JsonFormatter, format_with, openapi},
 };
 
 /// Whether a trailing `,` should follow the last entry.
@@ -46,20 +48,35 @@ impl TrailingSeparator {
 ///
 /// `emit_entry(index, f)` is invoked once per entry; the first call receives no leading separator.
 /// `spans` provides per-entry source spans used for the blank-line detection.
+///
+/// `permutation` reorders the entries (OpenAPI key ordering). When it is `Some`, the source gap
+/// between two now-adjacent entries is meaningless, so the separator uses the blank-line fact captured
+/// from the source order instead. `emit_entry` still receives source indices.
 pub fn write_separated<'a, F>(
     f: &mut JsonFormatter<'_, 'a>,
     spans: &[Span],
     trailing: TrailingSeparator,
     upper_bound: u32,
+    permutation: Option<&Frame>,
     mut emit_entry: F,
 ) where
     F: FnMut(usize, &mut JsonFormatter<'_, 'a>),
 {
     let count = spans.len();
-    for i in 0..count {
+    for position in 0..count {
+        let i = match permutation {
+            None => position,
+            Some(frame) => openapi::source_index(frame, position, f),
+        };
         emit_entry(i, f);
-        if i + 1 < count {
-            write_inter_entry_separator(spans[i], spans[i + 1], f);
+        if position + 1 < count {
+            match permutation {
+                None => write_inter_entry_separator(spans[position], spans[position + 1], f),
+                Some(frame) => {
+                    let blank = openapi::blank_before(frame, position + 1, f);
+                    write_permuted_separator(blank, upper_bound, f);
+                }
+            }
         }
     }
 
@@ -103,6 +120,27 @@ fn write_trailing_separator(upper_bound: u32, f: &mut JsonFormatter<'_, '_>) {
     }
 
     write!(f, if_group_breaks(&","));
+}
+
+/// The separator between two permuted entries.
+///
+/// The source gap says nothing once entries move, so `blank` is the fact captured from the source
+/// order before permuting: a blank line travels with the entry it preceded. No comment can be pending
+/// here, since an object only reorders when none is inside it, so there is nothing to thread around
+/// the comma.
+fn write_permuted_separator(blank: bool, object_end: u32, f: &mut JsonFormatter<'_, '_>) {
+    // Assert the premise rather than trust it. A pending comment beyond the closing brace is normal
+    // and harmless; one inside would mean the bail-out let a reorderable object keep a comment.
+    debug_assert!(
+        f.context().comments().peek().is_none_or(|c| c.span.start >= object_end),
+        "a comment inside a permuted object reached the separator"
+    );
+    write!(f, ",");
+    if blank {
+        write!(f, empty_line());
+    } else {
+        write!(f, soft_line_break_or_space());
+    }
 }
 
 /// Writes the `,` separator between two entries,

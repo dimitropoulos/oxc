@@ -1,0 +1,114 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# A mapping is permuted while a comment is still pending further down the stream.
+#
+# This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+# beyond the end of the mapping being printed. It cannot claim the gap it is handed is forward-ordered:
+# the entries have moved, so the "previous" entry can sit later in the source than the next one, and a
+# comment pass measuring that gap sees an inverted range.
+#
+# An earlier assert here demanded either a forward gap or no pending comment at all, which a document
+# as ordinary as this one violates -- it crashed debug builds while release was perfectly correct. It
+# was covered only incidentally, as a side effect of another fixture, so it is named here.
+#
+# `may_reorder` is what makes the weaker claim true: a comment anywhere in the mapping's own printing
+# scope refuses the mapping outright, so any comment that survives to be pending is genuinely below it.
+#
+# `get` must come out reordered below, or this fixture proves nothing: a refused mapping never reaches
+# the permuted separator. The `info` mapping is what keeps the tail comment out of `get`'s trivia scope
+# -- without it the comment is adjacent to `get` and refuses it, which is a different fixture.
+#
+# The root is refused, though, which is why `info` stays after `paths` rather than moving up behind
+# `openapi`: the tail comment is in the root's trivia scope. Delete that comment and the root reorders.
+# So the two facts this fixture pins are one and the same refusal, applied per mapping.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses: {}
+      summary: s
+      operationId: op
+info:
+  version: "1"
+  title: t
+
+# Still pending while `get` above is permuted, and belongs to nothing that moved.
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# A mapping is permuted while a comment is still pending further down the stream.
+#
+# This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+# beyond the end of the mapping being printed. It cannot claim the gap it is handed is forward-ordered:
+# the entries have moved, so the "previous" entry can sit later in the source than the next one, and a
+# comment pass measuring that gap sees an inverted range.
+#
+# An earlier assert here demanded either a forward gap or no pending comment at all, which a document
+# as ordinary as this one violates -- it crashed debug builds while release was perfectly correct. It
+# was covered only incidentally, as a side effect of another fixture, so it is named here.
+#
+# `may_reorder` is what makes the weaker claim true: a comment anywhere in the mapping's own printing
+# scope refuses the mapping outright, so any comment that survives to be pending is genuinely below it.
+#
+# `get` must come out reordered below, or this fixture proves nothing: a refused mapping never reaches
+# the permuted separator. The `info` mapping is what keeps the tail comment out of `get`'s trivia scope
+# -- without it the comment is adjacent to `get` and refuses it, which is a different fixture.
+#
+# The root is refused, though, which is why `info` stays after `paths` rather than moving up behind
+# `openapi`: the tail comment is in the root's trivia scope. Delete that comment and the root reorders.
+# So the two facts this fixture pins are one and the same refusal, applied per mapping.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      operationId: op
+      summary: s
+      responses: {}
+info:
+  version: "1"
+  title: t
+
+# Still pending while `get` above is permuted, and belongs to nothing that moved.
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# A mapping is permuted while a comment is still pending further down the stream.
+#
+# This shape is why the permuted separator's assert can only claim that a pending comment starts at or
+# beyond the end of the mapping being printed. It cannot claim the gap it is handed is forward-ordered:
+# the entries have moved, so the "previous" entry can sit later in the source than the next one, and a
+# comment pass measuring that gap sees an inverted range.
+#
+# An earlier assert here demanded either a forward gap or no pending comment at all, which a document
+# as ordinary as this one violates -- it crashed debug builds while release was perfectly correct. It
+# was covered only incidentally, as a side effect of another fixture, so it is named here.
+#
+# `may_reorder` is what makes the weaker claim true: a comment anywhere in the mapping's own printing
+# scope refuses the mapping outright, so any comment that survives to be pending is genuinely below it.
+#
+# `get` must come out reordered below, or this fixture proves nothing: a refused mapping never reaches
+# the permuted separator. The `info` mapping is what keeps the tail comment out of `get`'s trivia scope
+# -- without it the comment is adjacent to `get` and refuses it, which is a different fixture.
+#
+# The root is refused, though, which is why `info` stays after `paths` rather than moving up behind
+# `openapi`: the tail comment is in the root's trivia scope. Delete that comment and the root reorders.
+# So the two facts this fixture pins are one and the same refusal, applied per mapping.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      operationId: op
+      summary: s
+      responses: {}
+info:
+  version: "1"
+  title: t
+
+# Still pending while `get` above is permuted, and belongs to nothing that moved.
+
+===================== End =====================

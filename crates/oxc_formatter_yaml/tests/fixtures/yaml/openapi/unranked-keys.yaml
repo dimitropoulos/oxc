@@ -1,0 +1,22 @@
+# Keys the table does not name come after the ranked ones, compared case-insensitively, with
+# ties keeping source order: `Alpha` before `alpha` and `Type` before `type`, because that is
+# how they appear below.
+#
+# `content`'s table is empty, which is not the same as having no table: an empty table ranks
+# nothing, so every member is ordered case-insensitively.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      zebra: z
+      responses: {}
+      Alpha: a
+      operationId: op
+      alpha: a2
+      x-vendor: v
+      Type: t1
+      type: t2
+      content:
+        text/plain: {}
+        Application/XML: {}
+        application/json: {}

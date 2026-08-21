@@ -1,0 +1,112 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Bail-out 4 of 5: a key that is not readable as scalar text.
+#
+# "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
+# allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
+# both refused.
+#
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
+# printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
+# second, and formatting would not be idempotent.
+openapi: 3.0.0
+# A flow-collection key, at the top level: `yaml@2` rejects this shape at deeper indentation, and a
+# fixture should not pin behaviour on input that only one parser accepts.
+content:
+  [a, b]: flow-collection key
+  aa: 1
+paths:
+  /explicit-key:
+    get:
+      responses: {}
+      ? summary
+      : s
+      operationId: op
+  /escaped-key:
+    get:
+      responses: {}
+      "oper\x61tionId": escaped
+      summary: s
+  /quoted:
+    get:
+      responses: {}
+      "operationId": quoted double
+      'summary': quoted single
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Bail-out 4 of 5: a key that is not readable as scalar text.
+#
+# "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
+# allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
+# both refused.
+#
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
+# printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
+# second, and formatting would not be idempotent.
+openapi: 3.0.0
+# A flow-collection key, at the top level: `yaml@2` rejects this shape at deeper indentation, and a
+# fixture should not pin behaviour on input that only one parser accepts.
+content:
+  [a, b]: flow-collection key
+  aa: 1
+paths:
+  /explicit-key:
+    get:
+      operationId: op
+      summary: s
+      responses: {}
+  /escaped-key:
+    get:
+      responses: {}
+      "oper\x61tionId": escaped
+      summary: s
+  /quoted:
+    get:
+      "operationId": quoted double
+      "summary": quoted single
+      responses: {}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Bail-out 4 of 5: a key that is not readable as scalar text.
+#
+# "Readable" means a single-line, plain-or-quoted scalar whose value is a slice of the source: no
+# allocation, no escape processing. A flow-collection key and a quoted key carrying escapes are
+# both refused.
+#
+# `/explicit-key` and `/quoted` are the readable cases, and are ordered. An explicit `? key`
+# resolves to its content, so it ranks like the implicit spelling -- and it must be allowed: the
+# printer normalises `? key` to `key:`, so refusing it would refuse the first pass and not the
+# second, and formatting would not be idempotent.
+openapi: 3.0.0
+# A flow-collection key, at the top level: `yaml@2` rejects this shape at deeper indentation, and a
+# fixture should not pin behaviour on input that only one parser accepts.
+content:
+  [a, b]: flow-collection key
+  aa: 1
+paths:
+  /explicit-key:
+    get:
+      operationId: op
+      summary: s
+      responses: {}
+  /escaped-key:
+    get:
+      responses: {}
+      "oper\x61tionId": escaped
+      summary: s
+  /quoted:
+    get:
+      "operationId": quoted double
+      "summary": quoted single
+      responses: {}
+
+===================== End =====================

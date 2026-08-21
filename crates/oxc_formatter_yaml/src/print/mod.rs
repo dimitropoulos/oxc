@@ -18,11 +18,13 @@ mod block_collection;
 mod document;
 mod flow;
 mod mapping_item;
+mod openapi;
 mod scalar;
 mod span;
 
 pub use block::last_descendant_end;
 pub use document::write_root;
+pub use openapi::{OpenapiState, anchor_and_alias_starts};
 pub use span::to_span;
 
 pub type YamlFormatter<'buf, 'a> = Formatter<'buf, 'a, YamlFormatContext<'a>>;

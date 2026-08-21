@@ -1,0 +1,78 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Bail-out 1 of 5: a comment inside the mapping's scope refuses the whole mapping.
+#
+# Comments are placed by a positional, monotonic cursor, so moving an entry past another
+# entry would emit them against the wrong nodes. It is also what keeps this feature inside
+# FORMATTER_POLICY.md's comment invariants: a comment must never cross user content, and
+# reordering entries moves user content across a comment.
+#
+# `get` keeps source order below. Its sibling `post` has no comment and is ordered, which is
+# what makes this a per-mapping refusal rather than a per-document one.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses: {}
+      # this comment refuses `get`
+      summary: s
+      operationId: op
+    post:
+      responses: {}
+      summary: s
+      operationId: op
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Bail-out 1 of 5: a comment inside the mapping's scope refuses the whole mapping.
+#
+# Comments are placed by a positional, monotonic cursor, so moving an entry past another
+# entry would emit them against the wrong nodes. It is also what keeps this feature inside
+# FORMATTER_POLICY.md's comment invariants: a comment must never cross user content, and
+# reordering entries moves user content across a comment.
+#
+# `get` keeps source order below. Its sibling `post` has no comment and is ordered, which is
+# what makes this a per-mapping refusal rather than a per-document one.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses: {}
+      # this comment refuses `get`
+      summary: s
+      operationId: op
+    post:
+      operationId: op
+      summary: s
+      responses: {}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Bail-out 1 of 5: a comment inside the mapping's scope refuses the whole mapping.
+#
+# Comments are placed by a positional, monotonic cursor, so moving an entry past another
+# entry would emit them against the wrong nodes. It is also what keeps this feature inside
+# FORMATTER_POLICY.md's comment invariants: a comment must never cross user content, and
+# reordering entries moves user content across a comment.
+#
+# `get` keeps source order below. Its sibling `post` has no comment and is ordered, which is
+# what makes this a per-mapping refusal rather than a per-document one.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses: {}
+      # this comment refuses `get`
+      summary: s
+      operationId: op
+    post:
+      operationId: op
+      summary: s
+      responses: {}
+
+===================== End =====================

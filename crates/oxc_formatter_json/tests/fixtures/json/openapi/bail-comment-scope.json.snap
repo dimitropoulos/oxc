@@ -1,0 +1,108 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// Bail-out 1, at all three edges.
+//
+// Unlike YAML, one `peek` covers the whole object: the braces bound it exactly. On entry the cursor
+// sits just past `{` -- the object's own leading comments are already drained, and each property's
+// leading comments are drained inside the property loop, so everything between the braces is still
+// pending. The YAML backend needs a second check precisely because a block mapping has no braces.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/before-first": {
+      "get": {
+        // above the first property
+        "responses": {},
+        "operationId": "op"
+      }
+    },
+    "/after-last": {
+      "get": {
+        "responses": {},
+        "operationId": "op"
+        // after the last property, before the brace
+      }
+    },
+    "/trailing-on-value": {
+      "get": {
+        "responses": {}, // trailing on a property
+        "operationId": "op"
+      }
+    }
+  }
+}
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+// Bail-out 1, at all three edges.
+//
+// Unlike YAML, one `peek` covers the whole object: the braces bound it exactly. On entry the cursor
+// sits just past `{` -- the object's own leading comments are already drained, and each property's
+// leading comments are drained inside the property loop, so everything between the braces is still
+// pending. The YAML backend needs a second check precisely because a block mapping has no braces.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/before-first": {
+      "get": {
+        // above the first property
+        "responses": {},
+        "operationId": "op"
+      }
+    },
+    "/after-last": {
+      "get": {
+        "responses": {},
+        "operationId": "op"
+        // after the last property, before the brace
+      }
+    },
+    "/trailing-on-value": {
+      "get": {
+        "responses": {}, // trailing on a property
+        "operationId": "op"
+      }
+    }
+  }
+}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+// Bail-out 1, at all three edges.
+//
+// Unlike YAML, one `peek` covers the whole object: the braces bound it exactly. On entry the cursor
+// sits just past `{` -- the object's own leading comments are already drained, and each property's
+// leading comments are drained inside the property loop, so everything between the braces is still
+// pending. The YAML backend needs a second check precisely because a block mapping has no braces.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/before-first": {
+      "get": {
+        // above the first property
+        "responses": {},
+        "operationId": "op"
+      }
+    },
+    "/after-last": {
+      "get": {
+        "responses": {},
+        "operationId": "op"
+        // after the last property, before the brace
+      }
+    },
+    "/trailing-on-value": {
+      "get": {
+        "responses": {}, // trailing on a property
+        "operationId": "op"
+      }
+    }
+  }
+}
+
+===================== End =====================

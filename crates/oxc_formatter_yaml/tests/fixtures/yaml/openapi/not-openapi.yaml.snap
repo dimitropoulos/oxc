@@ -1,0 +1,81 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Bail-out 5 of 5 (the content gate): no `openapi` key at the document root.
+#
+# This file must be byte-identical with the feature on. Every key here is a table name and
+# every mapping would be reordered if the gate were open, which is the point: the gate is what
+# stops the feature from touching arbitrary YAML.
+#
+# `swagger: "2.0"` deliberately does not match -- the root table is 3.x-shaped.
+swagger: "2.0"
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: s
+      operationId: op
+components:
+  schemas:
+    Pet:
+      type: object
+      description: A pet
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Bail-out 5 of 5 (the content gate): no `openapi` key at the document root.
+#
+# This file must be byte-identical with the feature on. Every key here is a table name and
+# every mapping would be reordered if the gate were open, which is the point: the gate is what
+# stops the feature from touching arbitrary YAML.
+#
+# `swagger: "2.0"` deliberately does not match -- the root table is 3.x-shaped.
+swagger: "2.0"
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: s
+      operationId: op
+components:
+  schemas:
+    Pet:
+      type: object
+      description: A pet
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Bail-out 5 of 5 (the content gate): no `openapi` key at the document root.
+#
+# This file must be byte-identical with the feature on. Every key here is a table name and
+# every mapping would be reordered if the gate were open, which is the point: the gate is what
+# stops the feature from touching arbitrary YAML.
+#
+# `swagger: "2.0"` deliberately does not match -- the root table is 3.x-shaped.
+swagger: "2.0"
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: s
+      operationId: op
+components:
+  schemas:
+    Pet:
+      type: object
+      description: A pet
+
+===================== End =====================

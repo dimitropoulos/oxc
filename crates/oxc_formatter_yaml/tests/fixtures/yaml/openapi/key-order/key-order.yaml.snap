@@ -1,0 +1,96 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+#
+# Here `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts
+# with `operationId`). So:
+#
+# `get`     -> the override: `summary` first, then `operationId`, then the unlisted keys
+#              (`responses`, `tags`) case-insensitively.
+# `post`    -> untouched. Its built-in table still applies, `operationId` first. This is the layering:
+#              upstream's `--sortFile` replaces the whole set, so naming only `get` there would
+#              silently disable `post`, `requestBody` and `responses` as well.
+# `requestBody` and `responses` -> also untouched, for the same reason.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses: {}
+      tags: [t]
+      operationId: op
+      summary: s
+    post:
+      responses: {}
+      summary: s
+      operationId: op
+      requestBody:
+        content: {}
+        required: true
+        description: d
+
+==================== Output ====================
+-------------------------------------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"keyOrder":{"get":["summary","operationId"]}} }
+-------------------------------------------------------------------------------
+# `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+#
+# Here `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts
+# with `operationId`). So:
+#
+# `get`     -> the override: `summary` first, then `operationId`, then the unlisted keys
+#              (`responses`, `tags`) case-insensitively.
+# `post`    -> untouched. Its built-in table still applies, `operationId` first. This is the layering:
+#              upstream's `--sortFile` replaces the whole set, so naming only `get` there would
+#              silently disable `post`, `requestBody` and `responses` as well.
+# `requestBody` and `responses` -> also untouched, for the same reason.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      summary: s
+      operationId: op
+      responses: {}
+      tags: [t]
+    post:
+      operationId: op
+      summary: s
+      requestBody:
+        description: d
+        required: true
+        content: {}
+      responses: {}
+
+--------------------------------------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"keyOrder":{"get":["summary","operationId"]}} }
+--------------------------------------------------------------------------------
+# `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+#
+# Here `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts
+# with `operationId`). So:
+#
+# `get`     -> the override: `summary` first, then `operationId`, then the unlisted keys
+#              (`responses`, `tags`) case-insensitively.
+# `post`    -> untouched. Its built-in table still applies, `operationId` first. This is the layering:
+#              upstream's `--sortFile` replaces the whole set, so naming only `get` there would
+#              silently disable `post`, `requestBody` and `responses` as well.
+# `requestBody` and `responses` -> also untouched, for the same reason.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      summary: s
+      operationId: op
+      responses: {}
+      tags: [t]
+    post:
+      operationId: op
+      summary: s
+      requestBody:
+        description: d
+        required: true
+        content: {}
+      responses: {}
+
+===================== End =====================

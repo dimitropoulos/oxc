@@ -4,6 +4,7 @@ use oxc_formatter_yaml::{
 };
 
 use super::super::oxfmtrc::{FormatConfig, ProseWrapConfig, TrailingCommaConfig};
+use super::to_sort_openapi;
 
 /// Convert `FormatConfig` into `YamlFormatOptions` for `oxc_formatter_yaml`.
 ///
@@ -43,6 +44,8 @@ pub fn to_oxc_formatter_yaml(
             TrailingCommaConfig::None => TrailingCommas::Never,
         };
     }
+    // [Oxfmt] sortOpenapi: object | boolean
+    options.sort_openapi = to_sort_openapi(config);
 
     options
 }

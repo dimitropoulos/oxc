@@ -8,6 +8,7 @@
 //! - [`to_oxc_formatter_graphql()`]: `oxc_formatter_graphql::GraphqlFormatOptions` for GraphQL formatting
 //! - [`to_oxc_formatter_yaml()`]: `oxc_formatter_yaml::YamlFormatOptions` for YAML formatting
 //! - [`to_oxc_toml()`]: `oxc_toml::Options` for TOML formatting
+//! - [`to_sort_openapi()`]: `oxc_openapi_order::SortOpenapi`, shared by the YAML and JSON mappers
 //! - `to_prettier`(NAPI-only): Prettier-compatible JSON, plus `inject_*` helpers for
 //!   layering in `parser` / `filepath` / plugin payloads at the format step
 //! - [`validate()`]: the validation gate runs every fallible conversion once
@@ -23,6 +24,7 @@ mod to_oxc_formatter_yaml;
 mod to_oxc_toml;
 #[cfg(feature = "napi")]
 mod to_prettier;
+mod to_sort_openapi;
 mod validate;
 
 pub use to_oxc_formatter::to_oxc_formatter;
@@ -36,4 +38,5 @@ pub use to_prettier::{
     build_prettier_options, inject_filepath, inject_oxfmt_plugin_payload, inject_parser,
     inject_print_width, inject_svelte_plugin_payload, inject_tailwind_plugin_payload, to_prettier,
 };
+pub use to_sort_openapi::to_sort_openapi;
 pub use validate::{ValidatedOptions, validate};

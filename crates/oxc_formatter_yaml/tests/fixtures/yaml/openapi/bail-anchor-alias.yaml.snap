@@ -1,0 +1,90 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
+#
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# never meets it because its JSON round-trip expands aliases away.
+#
+# Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
+# contains them is not an anchor, and that mapping is still ordered.
+openapi: 3.0.0
+paths:
+  /anchored:
+    get:
+      responses: &shared {}
+      summary: s
+      operationId: op
+  /aliased:
+    get:
+      responses: *shared
+      summary: s
+      operationId: op
+  /plain:
+    get:
+      responses: {}
+      x-plain: "https://example.com/?a=1&b=2 and *.js"
+      operationId: op
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
+#
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# never meets it because its JSON round-trip expands aliases away.
+#
+# Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
+# contains them is not an anchor, and that mapping is still ordered.
+openapi: 3.0.0
+paths:
+  /anchored:
+    get:
+      responses: &shared {}
+      summary: s
+      operationId: op
+  /aliased:
+    get:
+      responses: *shared
+      summary: s
+      operationId: op
+  /plain:
+    get:
+      operationId: op
+      responses: {}
+      x-plain: "https://example.com/?a=1&b=2 and *.js"
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Bail-out 2 of 5: an anchor or alias inside the mapping.
+#
+# YAML requires an anchor to precede its alias, so reordering could emit a file that does
+# not parse. This is a correctness bail-out, not a cosmetic one. The reference implementation
+# never meets it because its JSON round-trip expands aliases away.
+#
+# Note `x-plain` below: `&` and `*` are indicators only at token start, so a value that merely
+# contains them is not an anchor, and that mapping is still ordered.
+openapi: 3.0.0
+paths:
+  /anchored:
+    get:
+      responses: &shared {}
+      summary: s
+      operationId: op
+  /aliased:
+    get:
+      responses: *shared
+      summary: s
+      operationId: op
+  /plain:
+    get:
+      operationId: op
+      responses: {}
+      x-plain: "https://example.com/?a=1&b=2 and *.js"
+
+===================== End =====================

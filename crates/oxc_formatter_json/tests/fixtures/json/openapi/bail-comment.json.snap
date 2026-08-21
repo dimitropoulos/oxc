@@ -1,0 +1,99 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// Bail-out 1: a comment anywhere inside the object.
+//
+// Comments are placed by a positional, monotonic cursor, so moving a property past another property
+// would emit them against the wrong nodes. It is also what keeps this feature inside
+// FORMATTER_POLICY.md lines 70-79: a comment must never cross user content, and reordering properties
+// moves user content across a comment. Do not "optimise" this away.
+//
+// This crate accepts comments in the `json`, `jsonc` and `json5` variants -- only `json-stringify`
+// rejects them -- and `json` is the variant an OpenAPI `.json` file is formatted with, so this is not
+// a JSONC-only concern.
+//
+// `/ordered` has no comment and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/refused": {
+      "get": {
+        "responses": {},
+        // a comment refuses this object
+        "summary": "s",
+        "operationId": "op"
+      }
+    },
+    "/ordered": {
+      "get": { "responses": {}, "summary": "s", "operationId": "op" }
+    }
+  }
+}
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+// Bail-out 1: a comment anywhere inside the object.
+//
+// Comments are placed by a positional, monotonic cursor, so moving a property past another property
+// would emit them against the wrong nodes. It is also what keeps this feature inside
+// FORMATTER_POLICY.md lines 70-79: a comment must never cross user content, and reordering properties
+// moves user content across a comment. Do not "optimise" this away.
+//
+// This crate accepts comments in the `json`, `jsonc` and `json5` variants -- only `json-stringify`
+// rejects them -- and `json` is the variant an OpenAPI `.json` file is formatted with, so this is not
+// a JSONC-only concern.
+//
+// `/ordered` has no comment and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/refused": {
+      "get": {
+        "responses": {},
+        // a comment refuses this object
+        "summary": "s",
+        "operationId": "op"
+      }
+    },
+    "/ordered": {
+      "get": { "operationId": "op", "summary": "s", "responses": {} }
+    }
+  }
+}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+// Bail-out 1: a comment anywhere inside the object.
+//
+// Comments are placed by a positional, monotonic cursor, so moving a property past another property
+// would emit them against the wrong nodes. It is also what keeps this feature inside
+// FORMATTER_POLICY.md lines 70-79: a comment must never cross user content, and reordering properties
+// moves user content across a comment. Do not "optimise" this away.
+//
+// This crate accepts comments in the `json`, `jsonc` and `json5` variants -- only `json-stringify`
+// rejects them -- and `json` is the variant an OpenAPI `.json` file is formatted with, so this is not
+// a JSONC-only concern.
+//
+// `/ordered` has no comment and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/refused": {
+      "get": {
+        "responses": {},
+        // a comment refuses this object
+        "summary": "s",
+        "operationId": "op"
+      }
+    },
+    "/ordered": {
+      "get": { "operationId": "op", "summary": "s", "responses": {} }
+    }
+  }
+}
+
+===================== End =====================

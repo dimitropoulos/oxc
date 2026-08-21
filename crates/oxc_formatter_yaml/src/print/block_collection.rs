@@ -1,8 +1,9 @@
 use oxc_formatter_core::{
     Buffer,
-    builders::{align, group},
+    builders::{align, empty_line, group, hard_line_break},
     write,
 };
+use oxc_openapi_order::Step;
 use oxc_yaml_parser::ast::{Content, Mapping, Sequence};
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
     print::{
         YamlFormatter,
         block::{item_gap_anchor, last_descendant_block_scalar},
-        column_of, format_with, mapping_item, to_span, write_node,
+        column_of, format_with, mapping_item, openapi, to_span, write_node,
     },
 };
 
@@ -38,11 +39,36 @@ enum ItemTail {
     /// Also every sequence-item block scalar, direct or not
     /// (Prettier's `shouldOwnEndComment` has no block-scalar exclusion for sequence items).
     EndsInBlockScalar,
-    /// The item's VALUE is a block scalar (mapping only):
+    /// The item's value is a block scalar (mapping only):
     /// it cannot own end comments either
     /// (Prettier's `shouldOwnEndComment` exclusion, an ancestor whose value is a collection still can);
     /// skip both, the comments fall through to the enclosing container or the next node's leading position.
     ValueIsBlockScalar,
+}
+
+/// How the separator to the next item is decided.
+#[derive(Clone, Copy)]
+enum Separator {
+    /// Nothing follows.
+    None,
+    /// Measure the source gap between the two adjacent items (`next_start`).
+    Measured(u32),
+    /// The items were permuted, so the source gap between two now-adjacent items says nothing.
+    /// `blank_before` is the blank-line fact captured from the source order before anything moved,
+    /// which travels with the item it preceded. `next_start` still bounds the end-comment flush, and
+    /// `comment_scope_end` is carried only to assert the invariant in `finish_previous_item`.
+    Permuted { next_start: u32, blank_before: bool, comment_scope_end: u32 },
+}
+
+impl Separator {
+    fn next_start(self) -> Option<u32> {
+        match self {
+            Separator::None => None,
+            Separator::Measured(next_start) | Separator::Permuted { next_start, .. } => {
+                Some(next_start)
+            }
+        }
+    }
 }
 
 /// Emits the previous item's same-line trailing comment and container end comments
@@ -54,7 +80,7 @@ fn finish_previous_item(
     align_width: u8,
     mut prev_end: u32,
     prev_tail: ItemTail,
-    next_start: Option<u32>,
+    separator: Separator,
     f: &mut YamlFormatter<'_, '_>,
 ) {
     if prev_tail == ItemTail::Plain {
@@ -65,12 +91,34 @@ fn finish_previous_item(
             item_column,
             align_width,
             prev_end,
-            next_start.unwrap_or(u32::MAX),
+            separator.next_start().unwrap_or(u32::MAX),
             f,
         );
     }
-    if let Some(next_start) = next_start {
-        write_item_separator(prev_end, next_start, f);
+    match separator {
+        Separator::None => {}
+        Separator::Measured(next_start) => write_item_separator(prev_end, next_start, f),
+        Separator::Permuted { blank_before, comment_scope_end, .. } => {
+            // Permuting makes `prev_end > next_start` possible, so the two comment passes above were
+            // handed an inverted range. That is safe only because a mapping reorders only when no
+            // comment is pending before its scope end: such a comment cannot be claimed by either
+            // pass, so neither reaches its unguarded slicing. Assert the premise rather than trust
+            // it, since a pending comment past the scope end is normal and harmless while one before
+            // it would not be.
+            //
+            // The bound is the scope end, not `mapping.span.end`. The latter stops at the last item,
+            // so a trailing comment on that item's line starts past it and would slip through, which
+            // is exactly a comment the same-line pass can still claim.
+            debug_assert!(
+                f.context().comments().peek().is_none_or(|c| c.span.start >= comment_scope_end),
+                "a comment inside a permuted mapping reached the comment passes"
+            );
+            if blank_before {
+                write!(f, empty_line());
+            } else {
+                write!(f, hard_line_break());
+            }
+        }
     }
 }
 
@@ -83,12 +131,30 @@ pub fn write_mapping<'a>(
     depth.set(depth.get() + 1);
     let item_column = column_of(&f.context().source_text(), mapping.span.start);
     let align_width = f.options().indent_width.value();
+    // OpenAPI key ordering. `None` keeps source order, which is every mapping in a non-OpenAPI
+    // document and every mapping the bail-out refuses; see `print/openapi.rs`.
+    let permutation = openapi::begin_mapping(mapping, f);
+    // Once per reordered mapping, not once per separator: the bound is a property of the mapping.
+    let comment_scope_end =
+        permutation.as_ref().map(|_| openapi::comment_scope_end(mapping, f)).unwrap_or_default();
+
     let mut prev_end: Option<u32> = None;
     let mut prev_tail = ItemTail::Plain;
-    for item in &mapping.children {
+    for position in 0..mapping.children.len() {
+        let index =
+            permutation.as_ref().map_or(position, |p| openapi::source_index(p, position, f));
+        let item = &mapping.children[index];
         let start = item.span.start;
         if let Some(prev_end) = prev_end {
-            finish_previous_item(item_column, align_width, prev_end, prev_tail, Some(start), f);
+            let separator = match &permutation {
+                None => Separator::Measured(start),
+                Some(p) => Separator::Permuted {
+                    next_start: start,
+                    blank_before: openapi::blank_before(p, position, f),
+                    comment_scope_end,
+                },
+            };
+            finish_previous_item(item_column, align_width, prev_end, prev_tail, separator, f);
         }
         let value_node = item.value_content();
         let last_block = value_node.and_then(last_descendant_block_scalar);
@@ -117,7 +183,10 @@ pub fn write_mapping<'a>(
         write!(f, group(&entry));
     }
     if let Some(prev_end) = prev_end {
-        finish_previous_item(item_column, align_width, prev_end, prev_tail, None, f);
+        finish_previous_item(item_column, align_width, prev_end, prev_tail, Separator::None, f);
+    }
+    if let Some(permutation) = permutation {
+        openapi::finish(permutation, f);
     }
     let depth = f.context().collection_depth();
     depth.set(depth.get() - 1);
@@ -133,14 +202,14 @@ pub fn write_sequence<'a>(sequence: &'a Sequence<'a>, f: &mut YamlFormatter<'_, 
     let item_column = column_of(&f.context().source_text(), sequence.span.start);
     let mut prev_end: Option<u32> = None;
     let mut prev_tail = ItemTail::Plain;
-    for item in &sequence.children {
+    for (index, item) in sequence.children.iter().enumerate() {
         if let Some(prev_end) = prev_end {
             finish_previous_item(
                 item_column,
                 SEQ_CONTENT_ALIGN,
                 prev_end,
                 prev_tail,
-                Some(item.span.start),
+                Separator::Measured(item.span.start),
                 f,
             );
         }
@@ -164,11 +233,27 @@ pub fn write_sequence<'a>(sequence: &'a Sequence<'a>, f: &mut YamlFormatter<'_, 
             write!(f, "-");
         }
         if let Some(node) = &item.content {
-            write!(f, align(SEQ_CONTENT_ALIGN, &format_with(|f| write_node(node, f))));
+            // The element's ancestry step. A block mapping cannot appear inside a flow collection,
+            // so `write_flow_sequence` needs no equivalent: no mapping below it is ever reordered.
+            let step = Step::index(index);
+            write!(
+                f,
+                align(
+                    SEQ_CONTENT_ALIGN,
+                    &format_with(|f| openapi::with_step(step, f, |f| write_node(node, f)))
+                )
+            );
         }
     }
     if let Some(prev_end) = prev_end {
-        finish_previous_item(item_column, SEQ_CONTENT_ALIGN, prev_end, prev_tail, None, f);
+        finish_previous_item(
+            item_column,
+            SEQ_CONTENT_ALIGN,
+            prev_end,
+            prev_tail,
+            Separator::None,
+            f,
+        );
     }
     let depth = f.context().collection_depth();
     depth.set(depth.get() - 1);

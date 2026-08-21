@@ -1,0 +1,123 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// Bail-out 4: a numeric key whose printed text is not the property it names.
+//
+// `1.0` prints as `1.0` but names the property `1`, so `{1.0: .., "1": ..}` is one property written
+// twice. Ordering by printed text ranks the two spellings differently, which breaks the tie that
+// preserves their relative order and silently flips which one wins -- the formatter changing what the
+// document means. Refusing is the only safe answer, so the key reports no identity at all.
+//
+// The test is a round-trip (`String(Number(k)) == k`), not a shape: `/decimal`, `/exponent`, `/hex`
+// and `/separator` are four spellings of the same hazard, and `numeric-keys.json` holds the keys that
+// do round-trip and are read normally.
+//
+// The refusal survives its own output, which is what makes it correct: both key writers quote a
+// numeric key only when it round-trips, so a key refused here is emitted bare and is still a
+// non-round-tripping numeric literal on the next pass. Were it quoted, pass 2 would see an ordinary
+// string key and reorder.
+//
+// `/ordered` has no numeric key and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/decimal": { "get": { "responses": {}, 1.0: "first", "1": "last", "operationId": "op" } },
+    "/exponent": { "get": { "responses": {}, 1e2: "first", "100": "last", "operationId": "op" } },
+    "/hex": { "get": { "responses": {}, 0x10: "first", "16": "last", "operationId": "op" } },
+    "/separator": { "get": { "responses": {}, 1_000: "first", "1000": "last", "operationId": "op" } },
+    "/ordered": { "get": { "responses": {}, "summary": "s", "operationId": "op" } }
+  }
+}
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+// Bail-out 4: a numeric key whose printed text is not the property it names.
+//
+// `1.0` prints as `1.0` but names the property `1`, so `{1.0: .., "1": ..}` is one property written
+// twice. Ordering by printed text ranks the two spellings differently, which breaks the tie that
+// preserves their relative order and silently flips which one wins -- the formatter changing what the
+// document means. Refusing is the only safe answer, so the key reports no identity at all.
+//
+// The test is a round-trip (`String(Number(k)) == k`), not a shape: `/decimal`, `/exponent`, `/hex`
+// and `/separator` are four spellings of the same hazard, and `numeric-keys.json` holds the keys that
+// do round-trip and are read normally.
+//
+// The refusal survives its own output, which is what makes it correct: both key writers quote a
+// numeric key only when it round-trips, so a key refused here is emitted bare and is still a
+// non-round-tripping numeric literal on the next pass. Were it quoted, pass 2 would see an ordinary
+// string key and reorder.
+//
+// `/ordered` has no numeric key and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/decimal": {
+      "get": { "responses": {}, 1.0: "first", "1": "last", "operationId": "op" }
+    },
+    "/exponent": {
+      "get": {
+        "responses": {},
+        1e2: "first",
+        "100": "last",
+        "operationId": "op"
+      }
+    },
+    "/hex": {
+      "get": {
+        "responses": {},
+        0x10: "first",
+        "16": "last",
+        "operationId": "op"
+      }
+    },
+    "/separator": {
+      "get": {
+        "responses": {},
+        1_000: "first",
+        "1000": "last",
+        "operationId": "op"
+      }
+    },
+    "/ordered": {
+      "get": { "operationId": "op", "summary": "s", "responses": {} }
+    }
+  }
+}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+// Bail-out 4: a numeric key whose printed text is not the property it names.
+//
+// `1.0` prints as `1.0` but names the property `1`, so `{1.0: .., "1": ..}` is one property written
+// twice. Ordering by printed text ranks the two spellings differently, which breaks the tie that
+// preserves their relative order and silently flips which one wins -- the formatter changing what the
+// document means. Refusing is the only safe answer, so the key reports no identity at all.
+//
+// The test is a round-trip (`String(Number(k)) == k`), not a shape: `/decimal`, `/exponent`, `/hex`
+// and `/separator` are four spellings of the same hazard, and `numeric-keys.json` holds the keys that
+// do round-trip and are read normally.
+//
+// The refusal survives its own output, which is what makes it correct: both key writers quote a
+// numeric key only when it round-trips, so a key refused here is emitted bare and is still a
+// non-round-tripping numeric literal on the next pass. Were it quoted, pass 2 would see an ordinary
+// string key and reorder.
+//
+// `/ordered` has no numeric key and is reordered, so the refusal is per-object, not per-document.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/decimal": { "get": { "responses": {}, 1.0: "first", "1": "last", "operationId": "op" } },
+    "/exponent": { "get": { "responses": {}, 1e2: "first", "100": "last", "operationId": "op" } },
+    "/hex": { "get": { "responses": {}, 0x10: "first", "16": "last", "operationId": "op" } },
+    "/separator": {
+      "get": { "responses": {}, 1_000: "first", "1000": "last", "operationId": "op" }
+    },
+    "/ordered": { "get": { "operationId": "op", "summary": "s", "responses": {} } }
+  }
+}
+
+===================== End =====================

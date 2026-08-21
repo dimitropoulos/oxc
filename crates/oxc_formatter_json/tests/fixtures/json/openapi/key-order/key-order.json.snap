@@ -1,0 +1,95 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+//
+// The JSON twin of the YAML backend's `key-order` fixture, and it must produce the same order.
+//
+// `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts with
+// `operationId`). So:
+//
+// `get`  -> the override: `summary`, `operationId`, then the unlisted keys case-insensitively.
+// `post` -> untouched, built-in table, `operationId` first. That is the layering: upstream's
+//           `--sortFile` replaces the whole set, so naming only `get` there would silently disable
+//           `post`, `requestBody` and `responses` too.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": {
+      "get": { "responses": {}, "tags": ["t"], "operationId": "op", "summary": "s" },
+      "post": {
+        "responses": {},
+        "summary": "s",
+        "operationId": "op",
+        "requestBody": { "content": {}, "required": true, "description": "d" }
+      }
+    }
+  }
+}
+
+==================== Output ====================
+-------------------------------------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"keyOrder":{"get":["summary","operationId"]}} }
+-------------------------------------------------------------------------------
+// `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+//
+// The JSON twin of the YAML backend's `key-order` fixture, and it must produce the same order.
+//
+// `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts with
+// `operationId`). So:
+//
+// `get`  -> the override: `summary`, `operationId`, then the unlisted keys case-insensitively.
+// `post` -> untouched, built-in table, `operationId` first. That is the layering: upstream's
+//           `--sortFile` replaces the whole set, so naming only `get` there would silently disable
+//           `post`, `requestBody` and `responses` too.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": {
+      "get": {
+        "summary": "s",
+        "operationId": "op",
+        "responses": {},
+        "tags": ["t"]
+      },
+      "post": {
+        "operationId": "op",
+        "summary": "s",
+        "requestBody": { "description": "d", "required": true, "content": {} },
+        "responses": {}
+      }
+    }
+  }
+}
+
+--------------------------------------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"keyOrder":{"get":["summary","operationId"]}} }
+--------------------------------------------------------------------------------
+// `sortOpenapi.keyOrder` replaces one table and leaves every other one intact.
+//
+// The JSON twin of the YAML backend's `key-order` fixture, and it must produce the same order.
+//
+// `get` is overridden to `[summary, operationId]`, which is not its built-in order (that starts with
+// `operationId`). So:
+//
+// `get`  -> the override: `summary`, `operationId`, then the unlisted keys case-insensitively.
+// `post` -> untouched, built-in table, `operationId` first. That is the layering: upstream's
+//           `--sortFile` replaces the whole set, so naming only `get` there would silently disable
+//           `post`, `requestBody` and `responses` too.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": {
+      "get": { "summary": "s", "operationId": "op", "responses": {}, "tags": ["t"] },
+      "post": {
+        "operationId": "op",
+        "summary": "s",
+        "requestBody": { "description": "d", "required": true, "content": {} },
+        "responses": {}
+      }
+    }
+  }
+}
+
+===================== End =====================

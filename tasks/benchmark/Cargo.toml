@@ -47,6 +47,10 @@ name = "formatter"
 harness = false
 
 [[bench]]
+name = "openapi_order"
+harness = false
+
+[[bench]]
 name = "minifier"
 harness = false
 
@@ -79,6 +83,7 @@ oxc_isolated_declarations = { workspace = true, optional = true }
 oxc_linter = { workspace = true, optional = true }
 oxc_mangler = { workspace = true, optional = true }
 oxc_minifier = { workspace = true, optional = true }
+oxc_openapi_order = { workspace = true, optional = true }
 oxc_parser = { workspace = true, features = [
   "benchmarking",
   "regular_expression",
@@ -104,7 +109,8 @@ codspeed = ["criterion2/codspeed"]
 codspeed_napi = ["criterion2/codspeed", "dep:serde", "dep:serde_json"]
 
 # Features for running benchmarks with minimum dependencies.
-# "compiler" feature includes: lexer, parser, transformer, semantic, minifier, codegen, formatter
+# "compiler" feature includes: lexer, parser, transformer, semantic, minifier, codegen, formatter,
+#   openapi_order
 # "linter" feature includes: linter
 compiler = [
   "dep:oxc",
@@ -117,6 +123,7 @@ compiler = [
   "dep:oxc_isolated_declarations",
   "dep:oxc_mangler",
   "dep:oxc_minifier",
+  "dep:oxc_openapi_order",
   "dep:oxc_parser",
   "dep:oxc_semantic",
   "dep:oxc_span",
@@ -158,6 +165,7 @@ ignored = [
   "oxc_linter",
   "oxc_mangler",
   "oxc_minifier",
+  "oxc_openapi_order",
   "oxc_parser",
   "oxc_react_compiler",
   "oxc_semantic",

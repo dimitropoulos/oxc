@@ -1,0 +1,114 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# `sortOpenapi.properties: true` orders `properties` mappings under `components.schemas`
+# alphabetically. Off by default.
+#
+# `/under-schemas`: the schema's `properties` members are reordered -- case-insensitively, so `apple`
+# precedes `Banana` precedes `cherry`.
+#
+# `paths` shows the scope: a `properties` mapping in a response schema is not under
+# `components.schemas`, so this option leaves it alone and its members keep source order.
+#
+# Nothing else picks it up either, which is worth being precise about: `properties` does have a table,
+# but it is a child-role key, so it never orders its own entries; and the rule that would order them
+# from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas here it is
+# `schema`. So the mapping is genuinely unordered, not ordered by something else.
+openapi: 3.0.0
+components:
+  schemas:
+    Pet:
+      properties:
+        cherry: {}
+        Banana: {}
+        apple: {}
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  cherry: {}
+                  Banana: {}
+                  apple: {}
+
+==================== Output ====================
+----------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"properties":true} }
+----------------------------------------------------
+# `sortOpenapi.properties: true` orders `properties` mappings under `components.schemas`
+# alphabetically. Off by default.
+#
+# `/under-schemas`: the schema's `properties` members are reordered -- case-insensitively, so `apple`
+# precedes `Banana` precedes `cherry`.
+#
+# `paths` shows the scope: a `properties` mapping in a response schema is not under
+# `components.schemas`, so this option leaves it alone and its members keep source order.
+#
+# Nothing else picks it up either, which is worth being precise about: `properties` does have a table,
+# but it is a child-role key, so it never orders its own entries; and the rule that would order them
+# from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas here it is
+# `schema`. So the mapping is genuinely unordered, not ordered by something else.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  cherry: {}
+                  Banana: {}
+                  apple: {}
+components:
+  schemas:
+    Pet:
+      properties:
+        apple: {}
+        Banana: {}
+        cherry: {}
+
+-----------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"properties":true} }
+-----------------------------------------------------
+# `sortOpenapi.properties: true` orders `properties` mappings under `components.schemas`
+# alphabetically. Off by default.
+#
+# `/under-schemas`: the schema's `properties` members are reordered -- case-insensitively, so `apple`
+# precedes `Banana` precedes `cherry`.
+#
+# `paths` shows the scope: a `properties` mapping in a response schema is not under
+# `components.schemas`, so this option leaves it alone and its members keep source order.
+#
+# Nothing else picks it up either, which is worth being precise about: `properties` does have a table,
+# but it is a child-role key, so it never orders its own entries; and the rule that would order them
+# from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas here it is
+# `schema`. So the mapping is genuinely unordered, not ordered by something else.
+openapi: 3.0.0
+paths:
+  /p:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  cherry: {}
+                  Banana: {}
+                  apple: {}
+components:
+  schemas:
+    Pet:
+      properties:
+        apple: {}
+        Banana: {}
+        cherry: {}
+
+===================== End =====================

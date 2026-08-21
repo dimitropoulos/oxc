@@ -1,6 +1,6 @@
 [package]
 name = "oxfmt"
-version = "0.63.0"
+version = "0.64.0"
 authors.workspace = true
 categories.workspace = true
 edition.workspace = true
@@ -38,6 +38,7 @@ oxc_formatter_json = { workspace = true }
 oxc_formatter_yaml = { workspace = true }
 oxc_language_server = { workspace = true }
 oxc_napi = { workspace = true }
+oxc_openapi_order = { workspace = true }
 oxc_span = { workspace = true }
 
 bpaf = { workspace = true, features = ["autocomplete", "bright-color", "derive"] }

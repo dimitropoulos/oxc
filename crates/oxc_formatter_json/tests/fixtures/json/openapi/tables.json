@@ -1,0 +1,25 @@
+// Every table the default pass can resolve, in one document -- the JSON twin of the YAML backend's
+// `tables.yaml`, and it must produce the same key order.
+//
+// Verified against openapi-format v1.33.6, which agrees on every object here except the status codes
+// under `responses`: it emits 200 before 404, because they are JavaScript object keys and ECMAScript
+// enumerates integer-like keys in ascending numeric order. That is a property of its representation,
+// not an ordering rule, so we keep source order.
+{
+  "info": { "version": "1.0.0", "title": "Demo" },
+  "openapi": "3.0.0",
+  "paths": {
+    "/pets": {
+      "get": {
+        "responses": {
+          "404": { "content": { "text/plain": {}, "application/json": {} }, "description": "missing" },
+          "200": { "links": {}, "description": "ok" }
+        },
+        "summary": "List pets",
+        "operationId": "listPets",
+        "parameters": [{ "schema": {}, "in": "query", "name": "limit" }]
+      }
+    }
+  },
+  "components": { "schemas": { "Pet": { "format": "int64", "type": "object", "description": "A pet" } } }
+}

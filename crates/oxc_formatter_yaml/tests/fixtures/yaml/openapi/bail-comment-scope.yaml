@@ -1,0 +1,16 @@
+# Bail-out 1, at the two edges a block mapping's span does not cover.
+#
+# A block mapping has no closing token, so `mapping.span` stops at its last entry. Both a
+# same-line trailing comment and a deeper-indented end-comment run sit past that point and
+# are still claimed by the mapping's printing, so the refusal scope reaches past the span.
+openapi: 3.0.0
+paths:
+  /trailing:
+    get:
+      responses: {}
+      operationId: op # trailing comment past the span end
+  /end-comments:
+    get:
+      responses: {}
+      operationId: op
+        # deeper-indented end comment, also past the span end

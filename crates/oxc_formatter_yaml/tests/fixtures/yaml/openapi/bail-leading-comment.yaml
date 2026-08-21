@@ -1,0 +1,34 @@
+# Bail-out 1, at the edge a single `peek` cannot see.
+#
+# A block mapping's span starts at its first entry, so a comment run directly above that entry is
+# already drained and printed by the time the mapping is reached -- it is not inside the span, it is
+# immediately before it. Positionally it is the first entry's leading comment, so putting a different
+# entry under it would relocate it across user content, which FORMATTER_POLICY.md lines 70-79 forbid.
+# It is reached through the comment cursor's consumed side instead.
+#
+# Only the first position matters. `/first-stays` below has the same comment, but its first entry is
+# already the right one, so the tail still sorts: the comment goes on describing exactly the entry it
+# always described. That shape is what pins the precision -- its source order differs from its output,
+# so a regression to a blanket refusal would change these bytes. (A case whose input is already fully
+# ordered cannot pin anything: it produces identical output whether the code refuses or sorts.)
+#
+# `/key-trailing` shows the other case that must not refuse: a comment trailing the mapping's own key
+# line never moves, whatever happens below it.
+---
+openapi: 3.0.0
+paths:
+  /refused:
+    get:
+      # about responses
+      responses: {}
+      operationId: op
+  /first-stays:
+    get:
+      # about operationId
+      operationId: op
+      responses: {}
+      summary: s
+  /key-trailing:
+    get: # about get
+      responses: {}
+      operationId: op

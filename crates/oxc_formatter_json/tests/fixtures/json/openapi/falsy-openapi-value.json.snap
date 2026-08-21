@@ -1,0 +1,81 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// The content gate reads key presence, never the value.
+//
+// Upstream tests `if (jsonObj.openapi)`, so this root stays unordered there. Here it is an OpenAPI
+// document and the root is reordered, which is the divergence the crate docs record: a document
+// that names a version field without filling it in is still an OpenAPI document.
+//
+// JSON has one root per file, so the other falsy spellings (`0`, `false`, `null`) are covered by
+// `../../../yaml/openapi/falsy-openapi-value.yaml`; the gate is the same key-presence test in both
+// backends. `info` is written after `paths` so a reordered root is visible in the output.
+{
+  "openapi": "",
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {}
+      }
+    }
+  },
+  "info": {
+    "title": "empty string"
+  }
+}
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+// The content gate reads key presence, never the value.
+//
+// Upstream tests `if (jsonObj.openapi)`, so this root stays unordered there. Here it is an OpenAPI
+// document and the root is reordered, which is the divergence the crate docs record: a document
+// that names a version field without filling it in is still an OpenAPI document.
+//
+// JSON has one root per file, so the other falsy spellings (`0`, `false`, `null`) are covered by
+// `../../../yaml/openapi/falsy-openapi-value.yaml`; the gate is the same key-presence test in both
+// backends. `info` is written after `paths` so a reordered root is visible in the output.
+{
+  "openapi": "",
+  "info": {
+    "title": "empty string"
+  },
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {}
+      }
+    }
+  }
+}
+
+-------------------
+{ printWidth: 100 }
+-------------------
+// The content gate reads key presence, never the value.
+//
+// Upstream tests `if (jsonObj.openapi)`, so this root stays unordered there. Here it is an OpenAPI
+// document and the root is reordered, which is the divergence the crate docs record: a document
+// that names a version field without filling it in is still an OpenAPI document.
+//
+// JSON has one root per file, so the other falsy spellings (`0`, `false`, `null`) are covered by
+// `../../../yaml/openapi/falsy-openapi-value.yaml`; the gate is the same key-presence test in both
+// backends. `info` is written after `paths` so a reordered root is visible in the output.
+{
+  "openapi": "",
+  "info": {
+    "title": "empty string"
+  },
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {}
+      }
+    }
+  }
+}
+
+===================== End =====================

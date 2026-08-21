@@ -1,0 +1,60 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# With the option off, an OpenAPI document is byte-identical. This is the same shape as
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
+info:
+  version: 1.0.0
+  title: Demo
+openapi: 3.0.0
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: List pets
+      operationId: listPets
+
+==================== Output ====================
+--------------------------------------
+{ printWidth: 80, sortOpenapi: false }
+--------------------------------------
+# With the option off, an OpenAPI document is byte-identical. This is the same shape as
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
+info:
+  version: 1.0.0
+  title: Demo
+openapi: 3.0.0
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: List pets
+      operationId: listPets
+
+---------------------------------------
+{ printWidth: 100, sortOpenapi: false }
+---------------------------------------
+# With the option off, an OpenAPI document is byte-identical. This is the same shape as
+# `../tables.yaml`, which is reordered, so the pair pins that the option is what does it.
+info:
+  version: 1.0.0
+  title: Demo
+openapi: 3.0.0
+paths:
+  /pets:
+    get:
+      responses:
+        "200":
+          content: {}
+          description: ok
+      summary: List pets
+      operationId: listPets
+
+===================== End =====================

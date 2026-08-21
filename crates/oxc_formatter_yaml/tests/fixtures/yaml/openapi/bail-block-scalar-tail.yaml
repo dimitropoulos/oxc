@@ -1,0 +1,31 @@
+# Bail-out 5 of 5: a block scalar whose output depends on its position.
+#
+# `write_block_scalar` decides whether it owns its trailing newlines by comparing its span end
+# against the stream's last descendant, and the final newline of the file is decided from
+# whether the stream's last descendant is keep-chomped. Both read source order, so neither
+# follows an entry to a new position: moving one emits a trailing blank line at EOF or loses
+# the file's final newline, and re-formatting that output would change it again.
+#
+# `/safe` is the case that must not be refused: a folded scalar with a single trailing newline
+# is position-independent, and this shape is pervasive in real specs (`description: >-`).
+openapi: 3.0.0
+paths:
+  /blank-tail:
+    get:
+      responses: {}
+      description: |
+        literal text
+
+      operationId: op
+  /keep-chomped:
+    get:
+      responses: {}
+      description: |+
+        kept text
+      operationId: op
+  /safe:
+    get:
+      responses: {}
+      description: >-
+        folded text that is safe to move
+      operationId: op

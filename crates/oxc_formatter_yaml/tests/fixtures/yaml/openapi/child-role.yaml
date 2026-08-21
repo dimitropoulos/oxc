@@ -1,0 +1,33 @@
+# `responses`, `schemas` and `properties` order their children, never their own entries.
+#
+# The status codes keep source order (404 before 200). Each child is ordered by the response
+# table, and the keys are chosen so the two candidate tables disagree:
+#   responses table [description, headers, content, links] -> content, links, type
+#   properties table [description, type, items, ...]       -> type, content, links
+# so the output below shows which one actually applied.
+#
+# `properties` is the interesting case: it never applies its own table to its own entries, yet it
+# is still eligible to be ordered by its parent, so its entries take the responses table.
+#
+# Its `content` child then shows the precedence: `content` has its own (empty) table, and that
+# beats the properties table its parent would have applied, so it comes out alphabetically
+# (description, format, type) rather than in properties order (description, type, format). The
+# reference behaves the same way because its traversal is pre-order.
+openapi: 3.0.0
+x:
+  responses:
+    "404":
+      links: {}
+      type: t
+      content: {}
+    "200":
+      type: t
+      content: {}
+      links: {}
+    properties:
+      links: {}
+      type: t
+      content:
+        format: f
+        type: t
+        description: d

@@ -22,7 +22,7 @@ use crate::{
 
 use super::{
     FmtJsonValue, FormatInvalidJson, JsonFormatter, format_with, literal::FmtJsonString,
-    number_string_round_trips, write_quoted_str,
+    number_string_round_trips, openapi, write_quoted_str,
 };
 
 pub struct FmtJsonObject<'a, 'b> {
@@ -57,36 +57,56 @@ impl<'a> Format<'a, JsonFormatContext<'a>> for FmtJsonObject<'a, '_> {
         // Computed once over the siblings, threaded into each key.
         let force_quote = is_json5 && json5_consistent_force_quote(self.object, f);
 
+        // OpenAPI key ordering. `None` keeps source order, which is every object in a non-OpenAPI
+        // document and every object the bail-out refuses; see `print/openapi.rs`.
+        let permutation = openapi::begin_object(self.object, f);
+        if let Some(frame) = &permutation {
+            openapi::push_blanks(frame, &spans, f);
+        }
+
+        // The last property in source order. `spans` is indexed through the permutation below, so
+        // taking the last emitted property here instead would measure the trailing-comment gap across
+        // the properties in between and invent a blank line.
+        let source_last_end = spans.last().expect("non-empty properties").end;
+
         let properties = format_with(|f| {
-            write_separated(f, &spans, trailing, self.object.span.end, |i, f| {
-                let property = &self.object.properties[i];
-                match property {
-                    ObjectPropertyKind::ObjectProperty(prop) => {
-                        if is_suppressed_before(f, prop.span.start) {
-                            write!(f, FormatSuppressedNode(prop.span));
-                        } else {
-                            write!(f, FormatLeadingComments(prop.span));
-                            if is_json5 {
-                                json5_write_object_key(&prop.key, force_quote, f);
+            write_separated(
+                f,
+                &spans,
+                trailing,
+                self.object.span.end,
+                permutation.as_ref(),
+                |i, f| {
+                    let property = &self.object.properties[i];
+                    match property {
+                        ObjectPropertyKind::ObjectProperty(prop) => {
+                            if is_suppressed_before(f, prop.span.start) {
+                                write!(f, FormatSuppressedNode(prop.span));
                             } else {
-                                write_object_key(&prop.key, f);
+                                write!(f, FormatLeadingComments(prop.span));
+                                if is_json5 {
+                                    json5_write_object_key(&prop.key, force_quote, f);
+                                } else {
+                                    write_object_key(&prop.key, f);
+                                }
+                                write!(f, [":", space()]);
+                                let step = openapi::value_step(prop, f);
+                                openapi::with_step(step, f, |f| {
+                                    FmtJsonValue { expression: &prop.value }.fmt(f);
+                                });
                             }
-                            write!(f, [":", space()]);
-                            FmtJsonValue { expression: &prop.value }.fmt(f);
+                        }
+                        ObjectPropertyKind::SpreadProperty(spread) => {
+                            write!(f, FormatInvalidJson(spread.span));
                         }
                     }
-                    ObjectPropertyKind::SpreadProperty(spread) => {
-                        write!(f, FormatInvalidJson(spread.span));
-                    }
-                }
-            });
+                },
+            );
 
-            // `properties` is non-empty here, the empty-object early return is above
-            let last_end = spans.last().expect("non-empty properties").end;
             write!(
                 f,
                 FormatTrailingInsideComments {
-                    lower_bound: last_end,
+                    lower_bound: source_last_end,
                     upper_bound: self.object.span.end,
                 }
             );
@@ -121,6 +141,13 @@ impl<'a> Format<'a, JsonFormatContext<'a>> for FmtJsonObject<'a, '_> {
                 "}"
             ]
         );
+
+        // The frame is read while `properties` is evaluated by the write above, so it can only be
+        // dropped now. Every path out of this function passes through here: the two early returns are
+        // for an empty object, which never opens a frame.
+        if let Some(frame) = permutation {
+            openapi::end(frame, f);
+        }
     }
 }
 
@@ -260,7 +287,10 @@ fn json5_consistent_force_quote(object: &ObjectExpression<'_>, f: &JsonFormatter
 
 /// The normalized, arena-resident text of a numeric key (`x.00000` -> `x.0`, etc.).
 /// Shared by the `json` and `json5` key writers, which differ only in the quoting decision.
-fn normalized_numeric_key<'a>(lit: &NumericLiteral<'a>, f: &JsonFormatter<'_, 'a>) -> &'a str {
+pub(super) fn normalized_numeric_key<'a>(
+    lit: &NumericLiteral<'a>,
+    f: &JsonFormatter<'_, 'a>,
+) -> &'a str {
     let raw = lit.raw.as_ref().map_or("", oxc_ast::ast::Str::as_str);
     // JSON keeps one trailing decimal zero (`x.00000` -> `x.0`); see `format_trimmed_number`.
     let printed = format_trimmed_number(raw, /* keep_one_trailing_decimal_zero */ true);

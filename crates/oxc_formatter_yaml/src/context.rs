@@ -1,10 +1,12 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use oxc_formatter_core::{FormatContext, SourceText};
+use oxc_yaml_parser::ast::Root;
 
 use crate::{
     comments::{Comments, SourceComment},
     options::YamlFormatOptions,
+    print::OpenapiState,
 };
 
 /// Formatting context for YAML.
@@ -18,6 +20,18 @@ pub struct YamlFormatContext<'a> {
     /// End offset of the stream's last descendant node;
     /// block scalars compare against it.
     last_descendant_end: u32,
+    /// Per-run state for OpenAPI key ordering: the shared `oxc_openapi_order` session (the ancestry
+    /// of the mapping being printed and its reused ordering buffers) plus the lazily built
+    /// anchor/alias index.
+    ///
+    /// A `RefCell` rather than [`Cell`] because the state is not `Copy`; the discipline is the same
+    /// as `collection_depth`'s (per-run, mutated through `&self` at print sites). No borrow is ever
+    /// held across a nested write, which is what keeps the shared buffer re-entrant.
+    openapi: RefCell<OpenapiState<'a>>,
+    /// Whether the document currently being printed is an OpenAPI document.
+    /// Per document, not per stream: a stream may mix OpenAPI and non-OpenAPI documents.
+    /// Maintained by `write_document`.
+    openapi_document: Cell<bool>,
 }
 
 impl<'a> YamlFormatContext<'a> {
@@ -26,6 +40,7 @@ impl<'a> YamlFormatContext<'a> {
         source_code: &'a str,
         comments: &'a [SourceComment],
         last_descendant_end: u32,
+        root: &'a Root<'a>,
     ) -> Self {
         Self {
             options,
@@ -33,6 +48,8 @@ impl<'a> YamlFormatContext<'a> {
             comments: Comments::new(comments),
             collection_depth: Cell::new(0),
             last_descendant_end,
+            openapi: RefCell::new(OpenapiState::new(root)),
+            openapi_document: Cell::new(false),
         }
     }
 
@@ -42,6 +59,18 @@ impl<'a> YamlFormatContext<'a> {
 
     pub fn last_descendant_end(&self) -> u32 {
         self.last_descendant_end
+    }
+
+    /// Per-run OpenAPI ordering state. The borrow discipline is documented on `OpenapiState` itself,
+    /// in `print::openapi` (not linked: the type is private, and rustdoc rejects the link from here).
+    pub fn openapi(&self) -> &RefCell<OpenapiState<'a>> {
+        &self.openapi
+    }
+
+    /// Whether the document being printed is an OpenAPI document (its root mapping has an
+    /// `openapi` key). Set by `write_document` before the body is written.
+    pub fn openapi_document(&self) -> &Cell<bool> {
+        &self.openapi_document
     }
 
     /// Returns the source text with the arena lifetime (vs the trait's borrow-elided `&str`).

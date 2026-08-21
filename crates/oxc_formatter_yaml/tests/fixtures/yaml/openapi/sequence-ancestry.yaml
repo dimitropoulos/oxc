@@ -1,0 +1,25 @@
+# Sequence steps are part of the ancestry.
+#
+# The policy indexes the ancestry absolutely and treats the containing mapping as `None` across a
+# sequence boundary. Omitting a step for each sequence element deleted a segment, shifted every later
+# index, and let a grandparent's table reach through a sequence.
+#
+# `Foo` holds a sequence, so its element's containing mapping is the sequence, not `schemas`: the
+# element keeps source order. `parameters` is the shape where both readings agree, which is why real
+# specs never showed the difference. Both answers verified against openapi-format v1.33.6.
+---
+openapi: 3.0.0
+components:
+  schemas:
+    Foo:
+      - type: string
+        description: d
+paths:
+  /p:
+    get:
+      responses: {}
+      parameters:
+        - schema: {}
+          in: query
+          name: limit
+      operationId: op

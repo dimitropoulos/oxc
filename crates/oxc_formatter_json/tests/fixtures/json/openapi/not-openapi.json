@@ -1,0 +1,21 @@
+// The content gate: no `openapi` member at the root.
+//
+// Every key here is a table name and every object would be reordered if the gate were open, which is
+// the point. `"swagger": "2.0"` deliberately does not match -- the root table is 3.x-shaped.
+//
+// Layout still normalises, as it does for any file a formatter touches; what must not change is the
+// key order. That the whole output is identical with the option off is asserted directly by
+// `non_openapi_documents_are_untouched` in `tests/fixtures/mod.rs`.
+{
+  "swagger": "2.0",
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": { "200": { "content": {}, "description": "ok" } },
+        "summary": "s",
+        "operationId": "op"
+      }
+    }
+  },
+  "components": { "schemas": { "Pet": { "type": "object", "description": "A pet" } } }
+}

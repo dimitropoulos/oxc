@@ -1,0 +1,118 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// `sortOpenapi.properties: true` orders `properties` objects under `components.schemas`
+// alphabetically. Off by default.
+//
+// The JSON twin of the YAML backend's `properties` fixture, and it must produce the same order.
+//
+// `Pet.properties` is reordered case-insensitively: `apple`, `Banana`, `cherry`.
+//
+// `paths` shows the scope: a `properties` object in a response schema is not under
+// `components.schemas`, so it keeps source order. Nothing else picks it up either -- `properties` has
+// a table but it is a child-role key, so it never orders its own members, and the rule that would
+// order them from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas
+// here it is `schema`.
+{
+  "openapi": "3.0.0",
+  "components": {
+    "schemas": { "Pet": { "properties": { "cherry": {}, "Banana": {}, "apple": {} } } }
+  },
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "properties": { "cherry": {}, "Banana": {}, "apple": {} } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+==================== Output ====================
+----------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"properties":true} }
+----------------------------------------------------
+// `sortOpenapi.properties: true` orders `properties` objects under `components.schemas`
+// alphabetically. Off by default.
+//
+// The JSON twin of the YAML backend's `properties` fixture, and it must produce the same order.
+//
+// `Pet.properties` is reordered case-insensitively: `apple`, `Banana`, `cherry`.
+//
+// `paths` shows the scope: a `properties` object in a response schema is not under
+// `components.schemas`, so it keeps source order. Nothing else picks it up either -- `properties` has
+// a table but it is a child-role key, so it never orders its own members, and the rule that would
+// order them from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas
+// here it is `schema`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": { "cherry": {}, "Banana": {}, "apple": {} }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pet": { "properties": { "apple": {}, "Banana": {}, "cherry": {} } }
+    }
+  }
+}
+
+-----------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"properties":true} }
+-----------------------------------------------------
+// `sortOpenapi.properties: true` orders `properties` objects under `components.schemas`
+// alphabetically. Off by default.
+//
+// The JSON twin of the YAML backend's `properties` fixture, and it must produce the same order.
+//
+// `Pet.properties` is reordered case-insensitively: `apple`, `Banana`, `cherry`.
+//
+// `paths` shows the scope: a `properties` object in a response schema is not under
+// `components.schemas`, so it keeps source order. Nothing else picks it up either -- `properties` has
+// a table but it is a child-role key, so it never orders its own members, and the rule that would
+// order them from the parent needs that parent to be `responses`, `schemas` or `properties`, whereas
+// here it is `schema`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "properties": { "cherry": {}, "Banana": {}, "apple": {} } }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": { "Pet": { "properties": { "apple": {}, "Banana": {}, "cherry": {} } } }
+  }
+}
+
+===================== End =====================

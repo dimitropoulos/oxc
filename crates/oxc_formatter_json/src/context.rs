@@ -1,11 +1,11 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use oxc_ast::Comment;
 use oxc_diagnostics::OxcDiagnostic;
 use oxc_formatter_core::{FormatContext, SourceText};
 use oxc_span::Span;
 
-use crate::{comments::Comments, options::JsonFormatOptions};
+use crate::{comments::Comments, options::JsonFormatOptions, print::OpenapiState};
 
 /// Formatting context for JSON.
 pub struct JsonFormatContext<'a> {
@@ -16,6 +16,15 @@ pub struct JsonFormatContext<'a> {
     /// `1` on the wrapped parse path (skip the leading `(`), `0` on the bare fallback.
     /// Used by [`Self::report_invalid_json`] to report user-visible line/column.
     source_offset: u32,
+    /// Per-run state for OpenAPI key ordering: the ancestry of the object being printed and the
+    /// reused permutation buffers, all shared with the YAML backend via `oxc_openapi_order`.
+    ///
+    /// A `RefCell` rather than [`Cell`] because the state is not `Copy`. No borrow is ever held
+    /// across a nested write, which is what keeps the shared buffer re-entrant.
+    openapi: OpenapiState<'a>,
+    /// Whether the root value is an object with an `openapi` member. One document per file, so a
+    /// plain `bool` rather than the YAML backend's per-document `Cell`.
+    openapi_document: bool,
     /// First-error slot.
     /// `Box` keeps the happy-path field size to a single word.
     /// (the Option<Box<...>> is `None` for valid JSON and never allocates).
@@ -28,12 +37,15 @@ impl<'a> JsonFormatContext<'a> {
         source_code: &'a str,
         comments: &'a [Comment],
         source_offset: u32,
+        openapi_document: bool,
     ) -> Self {
         Self {
             options,
             source_text: SourceText::new(source_code),
             comments: Comments::new(comments),
             source_offset,
+            openapi: RefCell::new(oxc_openapi_order::Session::new()),
+            openapi_document,
             error: Cell::new(None),
         }
     }
@@ -48,6 +60,16 @@ impl<'a> JsonFormatContext<'a> {
     /// Returns the comment cursor.
     pub fn comments(&self) -> &Comments<'a> {
         &self.comments
+    }
+
+    /// Per-run OpenAPI ordering state.
+    pub fn openapi(&self) -> &OpenapiState<'a> {
+        &self.openapi
+    }
+
+    /// Whether the root value is an object with an `openapi` member (the content gate).
+    pub fn openapi_document(&self) -> bool {
+        self.openapi_document
     }
 
     /// Records the first invalid-JSON occurrence, subsequent calls are ignored.

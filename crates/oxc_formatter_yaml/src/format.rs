@@ -25,10 +25,11 @@ pub fn format<'a>(
     options: YamlFormatOptions,
 ) -> Result<Formatted<'a, YamlFormatContext<'a>>, OxcDiagnostic> {
     let (has_bom, source_text) = oxc_formatter_core::spec::split_bom(source_text);
-    let (root, source, comments) = parse_root(allocator, source_text)?;
+    let parsed = parse_root(allocator, source_text)?;
+    let root = parsed.root;
+    let source = parsed.source;
 
-    let context =
-        YamlFormatContext::new(options, source, comments, print::last_descendant_end(root));
+    let context = parsed.into_context(options);
     let mut state = FormatState::new(context, allocator);
     // Pre-allocate: measured on 6,925 real-world files (kubernetes, vscode, saleor, bootstrap),
     // 0.3x source bytes plus a 1024-element floor for tiny-file spikes avoids reallocation for 99.9% of the corpus.
@@ -60,10 +61,10 @@ pub fn format_to_ir<'a>(
     options: YamlFormatOptions,
 ) -> Result<EmbeddedIr<'a>, OxcDiagnostic> {
     let allocator = session.allocator();
-    let (root, source, comments) = parse_root(allocator, source_text)?;
+    let parsed = parse_root(allocator, source_text)?;
+    let root = parsed.root;
 
-    let context =
-        YamlFormatContext::new(options, source, comments, print::last_descendant_end(root));
+    let context = parsed.into_context(options);
     let mut state = FormatState::new_with_session(context, session.clone());
     let mut buffer = VecBuffer::new(&mut state);
 
@@ -71,6 +72,25 @@ pub fn format_to_ir<'a>(
 
     // YAML never collects Tailwind classes.
     Ok(EmbeddedIr { ir: buffer.into_vec(), tailwind_classes: Vec::new() })
+}
+
+/// Everything [`parse_root`] derives from the source, ready to seed a [`YamlFormatContext`].
+struct ParsedYaml<'a> {
+    root: &'a Root<'a>,
+    source: &'a str,
+    comments: &'a [SourceComment],
+}
+
+impl<'a> ParsedYaml<'a> {
+    fn into_context(self, options: YamlFormatOptions) -> YamlFormatContext<'a> {
+        YamlFormatContext::new(
+            options,
+            self.source,
+            self.comments,
+            print::last_descendant_end(self.root),
+            self.root,
+        )
+    }
 }
 
 /// Parse the source into the yaml-unist-shaped AST and bridge comment trivia,
@@ -81,7 +101,7 @@ pub fn format_to_ir<'a>(
 fn parse_root<'a>(
     allocator: &'a Allocator,
     source_text: &str,
-) -> Result<(&'a Root<'a>, &'a str, &'a [SourceComment]), OxcDiagnostic> {
+) -> Result<ParsedYaml<'a>, OxcDiagnostic> {
     // NOTE: Normalize line endings BEFORE parsing, unlike other `oxc_formatter_xxx`.
     // For YAML formatter, the printer slices verbatim text from the source in many places.
     // YAML is also unusual in that line breaks and whitespace have meaning.
@@ -103,7 +123,7 @@ fn parse_root<'a>(
     )
     .into_arena_slice();
 
-    Ok((root, source, comments))
+    Ok(ParsedYaml { root, source, comments })
 }
 
 /// Emits the stream's documents followed by any trailing comments, and the final newline.

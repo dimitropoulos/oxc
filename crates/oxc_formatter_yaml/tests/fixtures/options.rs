@@ -3,7 +3,7 @@
 //! Shared by the fixture harness and the conformance target via `#[path]`
 //! (one source, no drift; see `oxc_formatter_tests`'s AGENTS.md).
 
-use oxc_formatter_tests::{OptionSet, apply_core_options};
+use oxc_formatter_tests::{OptionSet, apply_core_options, parse_sort_openapi};
 use oxc_formatter_yaml::{ProseWrap, TrailingCommas, YamlFormatOptions};
 
 /// Applies the four core options plus the YAML-specific keys onto `options`.
@@ -36,6 +36,14 @@ pub fn apply_yaml_options(options: &mut YamlFormatOptions, json: &OptionSet) {
                 if let Some(s) = value.as_str() {
                     options.trailing_commas =
                         if s == "none" { TrailingCommas::Never } else { TrailingCommas::Always };
+                }
+            }
+            // Oxfmt's own extension, enabled by default. A fixture opts out to pin that the option
+            // is what does the reordering rather than something else, or passes the object form to
+            // exercise a sub-option. Parsed by the shared helper so this cannot drift from JSON's.
+            "sortOpenapi" => {
+                if let Some(sort) = parse_sort_openapi(value) {
+                    options.sort_openapi = sort;
                 }
             }
             _ => {}

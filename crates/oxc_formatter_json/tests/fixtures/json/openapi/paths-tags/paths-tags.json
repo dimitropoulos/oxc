@@ -1,0 +1,24 @@
+// `sortOpenapi.paths: "tags"` orders the `paths` object by each path item's tag key.
+//
+// The JSON twin of the YAML backend's `paths-tags` fixture, and it must produce the same order.
+//
+// The tag key is the first tag of the first method present in
+// `[get, query, post, put, delete, patch, options, head]` with a non-empty `tags`:
+//
+// `/two-methods` keys on `zebra` from its `post`, not `alpha` from its `patch` -- `post` comes earlier
+//   in that list, and the list order is upstream's, not the source's.
+// `/first-tag-only` keys on `beta`, not `aardvark`: only the first tag counts.
+// `/untagged` and `/no-methods` key on the empty string, which sorts before every real tag, and their
+//   tie keeps source order.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/two-methods": {
+      "patch": { "tags": ["alpha"], "responses": {} },
+      "post": { "tags": ["zebra"], "responses": {} }
+    },
+    "/first-tag-only": { "get": { "tags": ["beta", "aardvark"], "responses": {} } },
+    "/untagged": { "get": { "responses": {} } },
+    "/no-methods": { "description": "not an operation" }
+  }
+}

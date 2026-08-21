@@ -309,6 +309,30 @@ formatter-schema-json:
 formatter-config-ts:
   pnpm --filter oxfmt-app generate-config-types
 
+# Verify `oxc_openapi_order`'s reference model against the real openapi-format package.
+#
+# The differential test compares our ordering against a Rust transcription of openapi-format; this
+# checks that transcription against the actual package, which is the one thing that test cannot check
+# itself. Nothing in CI runs it, since it needs Node and a network install, so run it after touching
+# `reference.rs` or the tables.
+validate-openapi-reference:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root="${OPENAPI_FORMAT_ROOT:-}"
+  if [[ -z "$root" ]]; then
+    root="$(mktemp -d)"
+    printf '{"name":"validate-openapi-reference","private":true}\n' > "$root/package.json"
+    (cd "$root" && npm install --silent --no-audit --no-fund openapi-format@1.33.6)
+  fi
+  corpus="$(mktemp -d)"
+  OPENAPI_ORDER_FUZZ_DUMP="$corpus" cargo test -p oxc_openapi_order --test differential
+  OPENAPI_FORMAT_ROOT="$root" \
+    node crates/oxc_openapi_order/tests/differential/validate_reference.mjs "$corpus"
+
+# Run the OpenAPI corpora verification and benchmarks (downloads ~40 MB of specs on first run)
+openapi-bench *args:
+  tasks/benchmark/openapi/run.sh {{args}}
+
 # Automatically DRY up Cargo.toml manifests in a workspace
 autoinherit:
   cargo binstall cargo-autoinherit

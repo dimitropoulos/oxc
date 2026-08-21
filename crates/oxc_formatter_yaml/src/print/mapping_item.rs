@@ -15,7 +15,10 @@ use crate::{
     },
     context::YamlFormatContext,
     options::ProseWrap,
-    print::{YamlFormatter, column_of, format_with, to_span, write_node, write_node_or_suppressed},
+    print::{
+        YamlFormatter, column_of, format_with, openapi, to_span, write_node,
+        write_node_or_suppressed,
+    },
 };
 
 /// Where a mapping item lives; decides the empty-value layout
@@ -230,9 +233,7 @@ pub fn write_mapping_item<'a>(
         if key_absolutely_single_line && !key_trailing_same_line {
             write_key(item, f);
             write!(f, colon);
-            let value = format_with(|f| {
-                write_node_or_suppressed(value_node, f);
-            });
+            let value = format_with(|f| write_value_or_suppressed(item, value_node, f));
             write!(f, align(tab_width, &format_args!(hard_line_break(), value)));
             return;
         }
@@ -245,7 +246,7 @@ pub fn write_mapping_item<'a>(
         write_trailing_same_line_comment(key_span_end, b":", f);
         // The value sits in both conditional bodies
         let value = format_with(|f: &mut YamlFormatter<'_, 'a>| {
-            write_node_or_suppressed(value_node, f);
+            write_value_or_suppressed(item, value_node, f);
         })
         .memoized();
         // This item is multi-line by definition: expand the enclosing groups explicitly
@@ -283,7 +284,7 @@ pub fn write_mapping_item<'a>(
     // A value with no forced break keeps the group flat and is measured in full.
     let value_content_fmt = format_with(move |f: &mut YamlFormatter<'_, 'a>| {
         flush_leading_comments(value_start, f);
-        write!(f, group(&format_with(|f| write_node(value_node, f))));
+        write!(f, group(&format_with(|f| write_value(item, f))));
     })
     .memoized();
 
@@ -365,10 +366,25 @@ fn write_key<'a>(item: &'a MappingItem<'a>, f: &mut YamlFormatter<'_, 'a>) {
     }
 }
 
+/// The item's value, with the item's key pushed onto the OpenAPI ancestry.
+///
+/// Every path that writes a value goes through here or [`write_value_or_suppressed`], so the
+/// ancestry a nested mapping resolves against always reflects its real path.
 fn write_value<'a>(item: &'a MappingItem<'a>, f: &mut YamlFormatter<'_, 'a>) {
     if let Some(value) = item.value_content() {
-        write_node(value, f);
+        openapi::with_step(openapi::value_step(item, f), f, |f| write_node(value, f));
     }
+}
+
+/// [`write_value`] for the paths that already resolved the value node and honour suppression.
+fn write_value_or_suppressed<'a>(
+    item: &'a MappingItem<'a>,
+    value_node: &'a Node<'a>,
+    f: &mut YamlFormatter<'_, 'a>,
+) {
+    openapi::with_step(openapi::value_step(item, f), f, |f| {
+        write_node_or_suppressed(value_node, f);
+    });
 }
 
 /// `isInlineNode`: scalars, aliases and flow collections are inline.

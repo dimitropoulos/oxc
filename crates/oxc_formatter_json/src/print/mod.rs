@@ -10,8 +10,10 @@ use crate::{
 pub mod array;
 pub mod literal;
 pub mod object;
+pub mod openapi;
 mod stringify;
 
+pub use openapi::{OpenapiState, is_openapi_root};
 pub use stringify::FmtJsonStringifyValue;
 
 pub type JsonFormatter<'buf, 'a> = Formatter<'buf, 'a, JsonFormatContext<'a>>;

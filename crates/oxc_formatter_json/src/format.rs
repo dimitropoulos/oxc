@@ -14,8 +14,16 @@ use crate::{
     context::JsonFormatContext,
     options::{JsonFormatOptions, JsonVariant},
     parse::parse_json,
-    print::{FmtJsonStringifyValue, FmtJsonValue, JsonFormatter},
+    print::{self, FmtJsonStringifyValue, FmtJsonValue, JsonFormatter},
 };
+
+/// The OpenAPI content gate: the root value is an object with an `openapi` member.
+///
+/// Computed once per run and stored on the context. Deliberately key presence rather than the
+/// truthiness of the value that the reference implementation tests, so `"openapi": ""` still counts.
+fn is_openapi_document(expression: Option<&Expression<'_>>) -> bool {
+    matches!(expression, Some(Expression::ObjectExpression(object)) if print::is_openapi_root(object))
+}
 
 /// Parse `source_text` as JSON and build its formatter IR.
 ///
@@ -34,6 +42,7 @@ pub fn format<'a>(
         parsed.wrapped_source,
         parsed.comments,
         parsed.source_offset,
+        is_openapi_document(parsed.expression),
     );
     let mut state = FormatState::new(context, allocator);
     // Pre-allocate: measured on 1,447 real-world files (vscode, saleor, bootstrap),
@@ -79,6 +88,7 @@ pub fn format_to_ir<'a>(
         parsed.wrapped_source,
         parsed.comments,
         parsed.source_offset,
+        is_openapi_document(parsed.expression),
     );
     let mut state = FormatState::new_with_session(context, session.clone());
     let mut buffer = VecBuffer::new(&mut state);

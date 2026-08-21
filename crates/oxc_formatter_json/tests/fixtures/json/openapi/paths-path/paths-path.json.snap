@@ -1,0 +1,84 @@
+---
+source: crates/oxc_formatter_json/tests/fixtures/mod.rs
+---
+==================== Input ====================
+// `sortOpenapi.paths: "path"` orders the `paths` object by path template, segment by segment.
+//
+// The JSON twin of the YAML backend's `paths-path` fixture, and it must produce the same order.
+//
+// Off by default (`"original"`), and it is the only thing that orders this object: no built-in table
+// names `paths`, so with the default these stay exactly as written.
+//
+// `/pets/{id}` before `/pets-x` is what makes this segment-by-segment rather than flat text: flat, `-`
+// (0x2D) precedes `/` (0x2F) and `/pets-x` would win. By segment, `pets-x` is one segment sorting
+// after `pets`, so the deeper path comes first.
+//
+// Case is sensitive here, unlike the key comparator: `/Zebra` precedes `/albums`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/pets/{id}": { "get": { "responses": {}, "operationId": "getPet" } },
+    "/petstore": { "get": { "responses": {}, "operationId": "store" } },
+    "/pets-x": { "get": { "responses": {}, "operationId": "x" } },
+    "/pets": { "get": { "responses": {}, "operationId": "listPets" } },
+    "/albums": { "get": { "responses": {}, "operationId": "albums" } },
+    "/Zebra": { "get": { "responses": {}, "operationId": "zebra" } }
+  }
+}
+
+==================== Output ====================
+-------------------------------------------------
+{ printWidth: 80, sortOpenapi: {"paths":"path"} }
+-------------------------------------------------
+// `sortOpenapi.paths: "path"` orders the `paths` object by path template, segment by segment.
+//
+// The JSON twin of the YAML backend's `paths-path` fixture, and it must produce the same order.
+//
+// Off by default (`"original"`), and it is the only thing that orders this object: no built-in table
+// names `paths`, so with the default these stay exactly as written.
+//
+// `/pets/{id}` before `/pets-x` is what makes this segment-by-segment rather than flat text: flat, `-`
+// (0x2D) precedes `/` (0x2F) and `/pets-x` would win. By segment, `pets-x` is one segment sorting
+// after `pets`, so the deeper path comes first.
+//
+// Case is sensitive here, unlike the key comparator: `/Zebra` precedes `/albums`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/Zebra": { "get": { "operationId": "zebra", "responses": {} } },
+    "/albums": { "get": { "operationId": "albums", "responses": {} } },
+    "/pets": { "get": { "operationId": "listPets", "responses": {} } },
+    "/pets/{id}": { "get": { "operationId": "getPet", "responses": {} } },
+    "/pets-x": { "get": { "operationId": "x", "responses": {} } },
+    "/petstore": { "get": { "operationId": "store", "responses": {} } }
+  }
+}
+
+--------------------------------------------------
+{ printWidth: 100, sortOpenapi: {"paths":"path"} }
+--------------------------------------------------
+// `sortOpenapi.paths: "path"` orders the `paths` object by path template, segment by segment.
+//
+// The JSON twin of the YAML backend's `paths-path` fixture, and it must produce the same order.
+//
+// Off by default (`"original"`), and it is the only thing that orders this object: no built-in table
+// names `paths`, so with the default these stay exactly as written.
+//
+// `/pets/{id}` before `/pets-x` is what makes this segment-by-segment rather than flat text: flat, `-`
+// (0x2D) precedes `/` (0x2F) and `/pets-x` would win. By segment, `pets-x` is one segment sorting
+// after `pets`, so the deeper path comes first.
+//
+// Case is sensitive here, unlike the key comparator: `/Zebra` precedes `/albums`.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/Zebra": { "get": { "operationId": "zebra", "responses": {} } },
+    "/albums": { "get": { "operationId": "albums", "responses": {} } },
+    "/pets": { "get": { "operationId": "listPets", "responses": {} } },
+    "/pets/{id}": { "get": { "operationId": "getPet", "responses": {} } },
+    "/pets-x": { "get": { "operationId": "x", "responses": {} } },
+    "/petstore": { "get": { "operationId": "store", "responses": {} } }
+  }
+}
+
+===================== End =====================

@@ -1,0 +1,18 @@
+// The `jsonc` variant, and a block comment: same refusal, and it applies to every comment kind.
+//
+// `/ordered` has none and is reordered, so the refusal stays per-object across variants.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/refused": {
+      "get": {
+        "responses": {},
+        /* block comment refuses this object too */
+        "operationId": "op"
+      }
+    },
+    "/ordered": {
+      "get": { "responses": {}, "summary": "s", "operationId": "op" }
+    }
+  }
+}

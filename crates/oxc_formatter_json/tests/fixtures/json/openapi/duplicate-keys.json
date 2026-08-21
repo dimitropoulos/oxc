@@ -1,0 +1,9 @@
+// Duplicate keys keep their relative order, so JSON's last-one-wins semantics survive reordering.
+//
+// The sort is stable and equal keys tie, so `"first"` stays before `"last"` however the object moves.
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/p": { "get": { "responses": {}, "summary": "first", "operationId": "op", "summary": "last" } }
+  }
+}

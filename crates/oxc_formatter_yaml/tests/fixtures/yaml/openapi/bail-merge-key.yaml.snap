@@ -1,0 +1,102 @@
+---
+source: crates/oxc_formatter_yaml/tests/fixtures/mod.rs
+---
+==================== Input ====================
+# Bail-out 3 of 5: a merge key.
+#
+# `<<` interacts with its siblings by override precedence, so moving it changes the merged
+# result. Three spellings are refused: the plain `<<`, the explicit `!!merge` tag, and a quoted
+# `"<<"`.
+#
+# The quoted one is deliberate over-conservatism. Implicit tag resolution applies to plain
+# scalars only, so `"<<"` is really the string `<<` and would be safe to move -- but telling the
+# two apart would mean trusting that nothing downstream ever changes the quoting, and a key
+# spelled `<<` is not something a real document reorders for.
+openapi: 3.0.0
+defaults: &defaults
+  summary: inherited
+paths:
+  /merged:
+    get:
+      responses: {}
+      <<: *defaults
+      operationId: op
+  /tagged:
+    get:
+      responses: {}
+      !!merge : *defaults
+      operationId: op
+  /quoted:
+    get:
+      responses: {}
+      "<<": not-a-merge-key
+      operationId: op
+
+==================== Output ====================
+------------------
+{ printWidth: 80 }
+------------------
+# Bail-out 3 of 5: a merge key.
+#
+# `<<` interacts with its siblings by override precedence, so moving it changes the merged
+# result. Three spellings are refused: the plain `<<`, the explicit `!!merge` tag, and a quoted
+# `"<<"`.
+#
+# The quoted one is deliberate over-conservatism. Implicit tag resolution applies to plain
+# scalars only, so `"<<"` is really the string `<<` and would be safe to move -- but telling the
+# two apart would mean trusting that nothing downstream ever changes the quoting, and a key
+# spelled `<<` is not something a real document reorders for.
+openapi: 3.0.0
+defaults: &defaults
+  summary: inherited
+paths:
+  /merged:
+    get:
+      responses: {}
+      <<: *defaults
+      operationId: op
+  /tagged:
+    get:
+      responses: {}
+      !!merge : *defaults
+      operationId: op
+  /quoted:
+    get:
+      responses: {}
+      "<<": not-a-merge-key
+      operationId: op
+
+-------------------
+{ printWidth: 100 }
+-------------------
+# Bail-out 3 of 5: a merge key.
+#
+# `<<` interacts with its siblings by override precedence, so moving it changes the merged
+# result. Three spellings are refused: the plain `<<`, the explicit `!!merge` tag, and a quoted
+# `"<<"`.
+#
+# The quoted one is deliberate over-conservatism. Implicit tag resolution applies to plain
+# scalars only, so `"<<"` is really the string `<<` and would be safe to move -- but telling the
+# two apart would mean trusting that nothing downstream ever changes the quoting, and a key
+# spelled `<<` is not something a real document reorders for.
+openapi: 3.0.0
+defaults: &defaults
+  summary: inherited
+paths:
+  /merged:
+    get:
+      responses: {}
+      <<: *defaults
+      operationId: op
+  /tagged:
+    get:
+      responses: {}
+      !!merge : *defaults
+      operationId: op
+  /quoted:
+    get:
+      responses: {}
+      "<<": not-a-merge-key
+      operationId: op
+
+===================== End =====================

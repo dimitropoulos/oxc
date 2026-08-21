@@ -14,7 +14,7 @@ use crate::{
     print::{
         YamlFormatter,
         block::{ends_with_keep_chomped_block, item_gap_anchor, last_descendant_block_scalar},
-        to_span, write_node_or_suppressed,
+        openapi, to_span, write_node_or_suppressed,
     },
 };
 
@@ -136,6 +136,10 @@ fn should_print_document_end_marker(document: &Document<'_>, next: Option<&Docum
 }
 
 fn write_document<'a>(document: &'a Document<'a>, f: &mut YamlFormatter<'_, 'a>) {
+    // The OpenAPI content gate is per document: a stream may mix an OpenAPI document with others,
+    // and only the one whose root mapping has an `openapi` key is reordered.
+    f.context().openapi_document().set(openapi::document_is_openapi(document, f));
+
     let mut needs_line = false;
 
     for directive in &document.head.directives {

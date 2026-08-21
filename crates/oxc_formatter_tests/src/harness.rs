@@ -22,6 +22,7 @@ use std::{
 use oxc_formatter_core::{
     CoreFormatOptions, FormatOptions, IndentStyle, IndentWidth, LineEnding, LineWidth,
 };
+use oxc_openapi_order::{KeyOrderEntry, PathsOrder, SortOpenapi};
 
 /// A single `options.json` entry: a JSON object of per-test format options.
 pub type OptionSet = serde_json::Map<String, serde_json::Value>;
@@ -81,6 +82,68 @@ pub fn apply_core_options<O: FormatOptions>(options: &mut O, json: &OptionSet) {
     }
 
     options.apply_core(core);
+}
+
+/// Parses a fixture's `sortOpenapi` value: `false`, `true`, or the object form.
+///
+/// Shared by the YAML and JSON harnesses so a fixture's `options.json` cannot mean two different
+/// things depending on which backend reads it, since the option's whole point is that both agree.
+///
+/// Lenient like the rest of fixture parsing: an unknown sub-option or a wrongly typed value is
+/// ignored rather than failing, so a typo shows up as an unchanged snapshot instead of a panic.
+pub fn parse_sort_openapi(value: &serde_json::Value) -> Option<SortOpenapi> {
+    if let Some(enabled) = value.as_bool() {
+        return Some(enabled.into());
+    }
+    let object = value.as_object()?;
+    let mut sort = SortOpenapi::default();
+    for (key, value) in object {
+        match key.as_str() {
+            "paths" => {
+                if let Some(order) = value.as_str() {
+                    sort.paths = match order {
+                        "path" => PathsOrder::Path,
+                        "tags" => PathsOrder::Tags,
+                        _ => PathsOrder::Original,
+                    };
+                }
+            }
+            "components" => {
+                if let Some(on) = value.as_bool() {
+                    sort.components = on;
+                }
+            }
+            "properties" => {
+                if let Some(on) = value.as_bool() {
+                    sort.properties = on;
+                }
+            }
+            "keyOrder" => {
+                if let Some(tables) = value.as_object() {
+                    sort.key_order = tables
+                        .iter()
+                        .filter_map(|(key, fields)| {
+                            // A non-array value is dropped rather than defaulted. An empty table
+                            // means "order alphabetically", so treating one as the default would
+                            // turn a typo into a meaningful override instead of ignoring it. An
+                            // explicit `[]` still means alphabetical, which is why this tests the
+                            // value's type rather than whether it yields any fields.
+                            let fields = fields.as_array()?;
+                            Some(KeyOrderEntry {
+                                key: key.clone(),
+                                fields: fields
+                                    .iter()
+                                    .filter_map(|field| field.as_str().map(str::to_string))
+                                    .collect(),
+                            })
+                        })
+                        .collect();
+                }
+            }
+            _ => {}
+        }
+    }
+    Some(sort)
 }
 
 /// Per-language hook for the fixture harness.

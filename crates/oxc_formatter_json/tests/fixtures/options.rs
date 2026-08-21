@@ -6,7 +6,7 @@
 use oxc_formatter_json::{
     BracketSpacing, Expand, JsonFormatOptions, JsonVariant, QuoteProps, TrailingCommas,
 };
-use oxc_formatter_tests::{OptionSet, apply_core_options};
+use oxc_formatter_tests::{OptionSet, apply_core_options, parse_sort_openapi};
 
 /// Applies the four core options plus the JSON-specific keys onto `options`.
 /// Parsing is lenient like `apply_core_options`: unknown or invalid values are ignored.
@@ -56,6 +56,14 @@ pub fn apply_json_options(options: &mut JsonFormatOptions, json: &OptionSet) {
                         "consistent" => QuoteProps::Consistent,
                         _ => QuoteProps::AsNeeded,
                     };
+                }
+            }
+            // Oxfmt's own extension, enabled by default. A fixture opts out to pin that the option is
+            // what does the reordering rather than something else, or passes the object form to
+            // exercise a sub-option. Parsed by the shared helper so this cannot drift from YAML's.
+            "sortOpenapi" => {
+                if let Some(sort) = parse_sort_openapi(value) {
+                    options.sort_openapi = sort;
                 }
             }
             "objectWrap" => {
